@@ -36,7 +36,7 @@ def display_analysis(analysis):
 
 # Check if this call has the Reentrancy bug
 # Return true if it does, false otherwise
-def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack,source_map,var_state):
+def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack):
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     owner_path_condition = []
@@ -222,7 +222,7 @@ def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
 
     return (gas_increment, new_gas_memory)
 
-def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack,source_map,var_state):
+def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack):
     gas_increment, gas_memory = calculate_gas(opcode, stack, mem, global_state, analysis, solver)
     analysis["gas"] += gas_increment
     analysis["gas_mem"] = gas_memory
@@ -242,7 +242,7 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
         if isSymbolic(recipient):
             recipient = simplify(recipient)
 
-        reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state, taint_stack, source_map, var_state)
+        reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state, taint_stack)
         analysis["reentrancy_bug"].append(reentrancy_result)
 
         analysis["money_concurrency_bug"].append(global_state["pc"])

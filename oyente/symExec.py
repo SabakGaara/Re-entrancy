@@ -783,7 +783,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     # collecting the analysis result by calling this skeletal function
     # this should be done before symbolically executing the instruction,
     # since SE will modify the stack and mem
-    update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack,source_map,var_state)
+    update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack)
     if opcode == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
         global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
 
