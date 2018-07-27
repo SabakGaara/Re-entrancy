@@ -1883,6 +1883,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             raise ValueError('STACK underflow')
 
     elif opcode == "SSTORE":
+        owner_path_condition = []
+        solver_owner = Solver()
+
         if len(stack) > 1:
             for call_pc in calls:
                 calls_affect_state[call_pc] = True
@@ -1940,6 +1943,15 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
 
                             log.info(res)
+                            if stored_address in global_params.SSTORE_STACK:
+                                # log.info("recipent success")
+                                for condition in global_params.SSTORE_STACK[stored_address]:
+                                    #    log.info("recipient success")
+                                    owner_path_condition.append(condition)
+                                    solver_owner.add(condition)
+                                result = not (solver_owner.check == unsat)
+                                if result:
+                                    log.info("path_condition is satisfied")
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2
                         log.info("if use in call taint happen")
