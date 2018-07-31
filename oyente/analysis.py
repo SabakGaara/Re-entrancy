@@ -93,6 +93,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     if global_params.DEBUG_MODE:
         log.info("Reentrancy_bug? " + str(ret_val))
     if ret_val:
+        log.info(stack)
+        log.info(taint_stack)
         if target_recipient:
             log.info(target_recipient)
         if taint_transfer_amount:
@@ -110,15 +112,17 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     if global_params.VAR_STATE_GLOBAL[int(var_address)] == 2:
                         log.info("taint_happen in:")
                         log.info(global_state["Ia"][var_address])
-                    if var_address in global_params.SSTORE_STACK:
-                        # log.info("recipent success")
-                        for condition in global_params.SSTORE_STACK[var_address]:
-                            #   log.info("recipient success")
-                            owner_path_condition.append(condition)
-                            solver_owner.add(condition)
-                        result = not (solver_owner.check == unsat)
-                        if result:
-                            log.info("path_condition is satisfied")
+                        if var_address in global_params.SSTORE_STACK:
+                           # log.info("recipent success")
+                           for condition in global_params.SSTORE_STACK[var_address]:
+                               #   log.info("recipient success")
+                               owner_path_condition.append(condition)
+                               log.info("path_condition")
+                               log.info(owner_path_condition)
+                               solver_owner.add(condition)
+                           result = not (solver_owner.check == unsat)
+                           if result:
+                               log.info("path_condition is satisfied")
                 else:
                     # log.info(var_address)
                     global_params.VAR_STATE_GLOBAL[int(var_address)] = 1

@@ -1912,6 +1912,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 for condition in global_params.SSTORE_STACK[stored_address]:
                                     #    log.info("recipient success")
                                     owner_path_condition.append(condition)
+                                    log.info(owner_path_condition)
                                     solver_owner.add(condition)
                                 result = not (solver_owner.check == unsat)
                                 if result:
