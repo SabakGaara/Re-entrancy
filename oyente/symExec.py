@@ -828,9 +828,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if not isAllReal(computed, first):
                     solver.push()
                     solver.add(UGT(first, computed))
-                    if check_sat(solver) == sat:
-                        global_problematic_pcs['integer_overflow'].append(Overflow(global_state['pc'] - 1, solver.model()))
-                        overflow_pcs.append(global_state['pc'] - 1)
+                   # if check_sat(solver) == sat:
+                    #    global_problematic_pcs['integer_overflow'].append(Overflow(global_state['pc'] - 1, solver.model()))
+                     #   overflow_pcs.append(global_state['pc'] - 1)
                     solver.pop()
 
             stack.insert(0, computed)
@@ -1852,7 +1852,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if str(position) in global_state["Ia"]:
                     value = global_state["Ia"][str(position)]
                     stack.insert(0, value)
-                    taint_stack.insert(0, taint_postion)
+                    taint_stack.insert(0, taint_position)
                 else:
                     if is_expr(position):
                         position = simplify(position)
@@ -1912,7 +1912,6 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 for condition in global_params.SSTORE_STACK[stored_address]:
                                     #    log.info("recipient success")
                                     owner_path_condition.append(condition)
-                                    log.info(owner_path_condition)
                                     solver_owner.add(condition)
                                 result = not (solver_owner.check == unsat)
                                 if result:
@@ -1950,6 +1949,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                     #    log.info("recipient success")
                                     owner_path_condition.append(condition)
                                     solver_owner.add(condition)
+                                log.info(owner_path_condition)
                                 result = not (solver_owner.check == unsat)
                                 if result:
                                     log.info("path_condition is satisfied")

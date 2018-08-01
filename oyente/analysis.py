@@ -37,6 +37,7 @@ def display_analysis(analysis):
 # Check if this call has the Reentrancy bug
 # Return true if it does, false otherwise
 def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack):
+   # log.info("I am in")
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     owner_path_condition = []
@@ -93,8 +94,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     if global_params.DEBUG_MODE:
         log.info("Reentrancy_bug? " + str(ret_val))
     if ret_val:
-        log.info(stack)
-        log.info(taint_stack)
+        log.info("ret_val")
+        log.info(ret_val)
         if target_recipient:
             log.info(target_recipient)
         if taint_transfer_amount:
@@ -117,8 +118,6 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                            for condition in global_params.SSTORE_STACK[var_address]:
                                #   log.info("recipient success")
                                owner_path_condition.append(condition)
-                               log.info("path_condition")
-                               log.info(owner_path_condition)
                                solver_owner.add(condition)
                            result = not (solver_owner.check == unsat)
                            if result:
