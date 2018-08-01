@@ -96,6 +96,25 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     if ret_val:
         log.info("ret_val")
         log.info(ret_val)
+        ms_condition = ""
+        for condition in path_condition:
+            if str(condition).find('Is) ==') >= 0:
+                ms_condition = str(condition)
+                break
+        if ms_condition != "":
+            ms_owner = ms_condition.find("Ia_store")
+            if ms_owner >= 0:
+                ms_owner_key = ms_condition.split('-')
+                ms_owner_key = int(ms_owner_key)
+                if ms_owner_key in global_params.PATH_CONDITION:
+                    if global_params.PATH_CONDITION[ms_owner_key] == 2:
+                        log.info("taint owner, Onlyowner not worked")
+                    else:
+                        log.info("taint owner, Onlyowner on owner worked")
+                else:
+                    global_params.PATH_CONDITION[ms_owner_key] = 1
+            else:
+                log.info("It does not matter with syExec")
         if target_recipient:
             log.info(target_recipient)
         if taint_transfer_amount:

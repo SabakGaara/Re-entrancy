@@ -1885,7 +1885,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     elif opcode == "SSTORE":
         owner_path_condition = []
         solver_owner = Solver()
-
+        path_condition_sstore = path_conditions_and_vars["path_condition"]
         if len(stack) > 1:
             for call_pc in calls:
                 calls_affect_state[call_pc] = True
@@ -1900,6 +1900,26 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if taint_stored_value == 1:
                     # if stored_address in var_state :
                     stored_address = int(stored_address)
+                    flag = False
+                    if stored_address in global_params.PATH_CONDITION:
+                        if global_params.PATH_CONDITION[stored_address] == 1:
+                            for condition in path_condition_sstore :
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("onlyowner worked")
+                            else:
+                                log.info("onlyowner not worked")
+                    else:
+                        for condition in path_condition_sstore:
+                            if str(condition).find('Is) ==') >= 0:
+                                flag = True
+                                break
+                        if flag:
+                            global_params.PATH_CONDITION[stored_address] = 2
+                        else:
+                            global_params.PATH_CONDITION[stored_address] = 0
                     if stored_address in global_params.VAR_STATE_GLOBAL:
                         var_value = global_params.VAR_STATE_GLOBAL[stored_address]
                         if var_value == 1:
