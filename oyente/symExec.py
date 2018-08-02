@@ -1911,15 +1911,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 log.info("onlyowner worked")
                             else:
                                 log.info("onlyowner not worked")
-                        elif global_params.PATH_CONDITION[stored_address] == 3:
-                            for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
-                                    flag = True
-                                    break
-                            if flag:
-                                log.info("Taint target onlyowner, no bug")
-                            else:
-                                log.info("Taint target have not onlyowner,taint bug")
+
 
                     else:
                         for condition in path_condition_sstore:
@@ -1946,6 +1938,17 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 result = not (solver_owner.check == unsat)
                                 if result:
                                     log.info("path_condition is satisfied")
+                            if stored_address in global_params.PATH_CONDITION:
+                                if global_params.PATH_CONDITION[stored_address] == 3:
+                                    for condition in path_condition_sstore:
+                                        if str(condition).find('Is) ==') >= 0:
+                                            flag = True
+                                            break
+                                if flag:
+                                    log.info("Taint target onlyowner, no bug")
+                                else:
+                                    log.info("Taint target have not onlyowner,taint bug")
+
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2
                         log.info("if use in call taint happen")
@@ -1976,15 +1979,6 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 log.info("onlyowner worked")
                             else:
                                 log.info("onlyowner not worked")
-                        elif global_params.PATH_CONDITION[stored_address] == 3:
-                            for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
-                                    flag = True
-                                    break
-                            if flag:
-                                log.info("Taint target onlyowner, no bug")
-                            else:
-                                log.info("Taint target have not onlyowner,taint bug")
 
                     else:
                         for condition in path_condition_sstore:
@@ -2014,6 +2008,17 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 result = not (solver_owner.check == unsat)
                                 if result:
                                     log.info("path_condition is satisfied")
+                            if stored_address in global_params.PATH_CONDITION:
+                                if global_params.PATH_CONDITION[stored_address] == 3:
+                                    for condition in path_condition_sstore:
+                                        if str(condition).find('Is) ==') >= 0:
+                                            flag = True
+                                            break
+                                if flag:
+                                    log.info("Taint target onlyowner, no bug")
+                                else:
+                                    log.info("Taint target have not onlyowner,taint bug")
+
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2
                         log.info("if use in call taint happen")
