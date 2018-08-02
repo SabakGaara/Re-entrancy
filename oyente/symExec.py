@@ -1903,7 +1903,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     flag = False
                     if stored_address in global_params.PATH_CONDITION:
                         if global_params.PATH_CONDITION[stored_address] == 1:
-                            for condition in path_condition_sstore :
+                            for condition in path_condition_sstore:
                                 if str(condition).find('Is) ==') >= 0:
                                     flag = True
                                     break
@@ -1911,6 +1911,16 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 log.info("onlyowner worked")
                             else:
                                 log.info("onlyowner not worked")
+                        elif global_params.PATH_CONDITION[stored_address] == 3:
+                            for condition in path_condition_sstore:
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("Taint target onlyowner, no bug")
+                            else:
+                                log.info("Taint target have not onlyowner,taint bug")
+
                     else:
                         for condition in path_condition_sstore:
                             if str(condition).find('Is) ==') >= 0:
@@ -1955,6 +1965,37 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     # log.info("test4")
                     # log.info(stored_value)
                     stored_address = int(stored_address)
+                    flag = False
+                    if stored_address in global_params.PATH_CONDITION:
+                        if global_params.PATH_CONDITION[stored_address] == 1:
+                            for condition in path_condition_sstore:
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("onlyowner worked")
+                            else:
+                                log.info("onlyowner not worked")
+                        elif global_params.PATH_CONDITION[stored_address] == 3:
+                            for condition in path_condition_sstore:
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("Taint target onlyowner, no bug")
+                            else:
+                                log.info("Taint target have not onlyowner,taint bug")
+
+                    else:
+                        for condition in path_condition_sstore:
+                            if str(condition).find('Is) ==') >= 0:
+                                flag = True
+                                break
+                        if flag:
+                            global_params.PATH_CONDITION[stored_address] = 2
+                        else:
+                            global_params.PATH_CONDITION[stored_address] = 0
+
                     if stored_address in global_params.VAR_STATE_GLOBAL:
                         var_value = global_params.VAR_STATE_GLOBAL[int(stored_address)]
                         if var_value == 1:

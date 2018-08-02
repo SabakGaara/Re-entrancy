@@ -141,6 +141,12 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                            result = not (solver_owner.check == unsat)
                            if result:
                                log.info("path_condition is satisfied")
+                        if var_address in global_params.PATH_CONDITION:
+                            if global_params.PATH_CONDITION[var_address] == 2:
+                                log.info("Taint target onlyowner, no bug")
+                            elif global_params.PATH_CONDITION[var_address] == 1:
+                                log.info("Taint target have not onlyowner,taint bug")
+
                 else:
                     # log.info(var_address)
                     global_params.VAR_STATE_GLOBAL[int(var_address)] = 1
@@ -150,6 +156,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     if not (var_address in global_params.SSTORE_STACK):
                         global_params.SSTORE_STACK[var_address] = []
                     global_params.SSTORE_STACK[var_address].append(path_conditions_and_vars["path_condition"])
+                    if not (var_address in global_params.PATH_CONDITION):
+                        global_params.PATH_CONDITION[var_address] = 3
                 # log.info(path_conditions_and_vars["path_condition"])
         else:
             log.info("it does not matter")
