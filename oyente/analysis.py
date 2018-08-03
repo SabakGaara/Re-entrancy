@@ -94,8 +94,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     if global_params.DEBUG_MODE:
         log.info("Reentrancy_bug? " + str(ret_val))
     if ret_val:
-        log.info("ret_val")
-        log.info(ret_val)
+        #log.info("ret_val")
+        #log.info(ret_val)
         ms_condition = ""
         for condition in path_condition:
             if str(condition).find('Is) ==') >= 0:
