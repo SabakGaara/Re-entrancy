@@ -783,7 +783,7 @@ def sym_exec_ins(params):
     # collecting the analysis result by calling this skeletal function
     # this should be done before symbolically executing the instruction,
     # since SE will modify the stack and mem
-    update_analysis(analysis, instr_parts[0], stack, mem, global_state, path_conditions_and_vars, solver,taint_stack,source_map,var_state)
+    update_analysis(analysis, instr_parts[0], stack, mem, global_state, path_conditions_and_vars, solver,taint_stack)
     if instr_parts[0] == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
         global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
 
@@ -1319,8 +1319,8 @@ def sym_exec_ins(params):
             first = stack.pop(0)
             byte_index = 32 - first - 1
             second = stack.pop(0)
-            taint_first = stack.pop(0)
-            taint_second = stack.pop(0)
+            taint_first = taint_stack.pop(0)
+            taint_second = taint_stack.pop(0)
             if isAllReal(first, second):
                 if first >= 32 or first < 0:
                     computed = 0
@@ -1613,6 +1613,7 @@ def sym_exec_ins(params):
         if len(stack) > 0:
             global_state["pc"] = global_state["pc"] + 1
             stack.pop(0)
+            taint_stack.pop(0)
             new_var_name = "IH_blockhash"
             if new_var_name in path_conditions_and_vars:
                 new_var = path_conditions_and_vars[new_var_name]
@@ -1687,7 +1688,7 @@ def sym_exec_ins(params):
                     new_var = BitVec(new_var_name, 256)
                     path_conditions_and_vars[new_var_name] = new_var
                 stack.insert(0, new_var)
-                taint_stack.insert(0, SAFE_FLAG)
+                taint_stack.insert(0, taint_address)
                 if isReal(address):
                     mem[address] = new_var
                 else:
@@ -1760,7 +1761,7 @@ def sym_exec_ins(params):
                 if temp > current_miu_i:
                     current_miu_i = temp
                 mem[stored_address] = stored_value  # note that the stored_value could be
-                taint_mem[stored_address] = taint_stored_value
+                taint_mem[stored_address] = taint_temp_value
             else:
                 temp = (stored_address / 32) + 1
                 if isReal(current_miu_i):
@@ -1775,7 +1776,7 @@ def sym_exec_ins(params):
                 mem.clear()  # very conservative
                 taint_mem.clear()
                 mem[str(stored_address)] = stored_value
-                taint_mem[str(stored_address)] = taint_stored_value
+                taint_mem[str(stored_address)] = taint_temp_value
 
             global_state["miu_i"] = current_miu_i
         else:
@@ -1825,38 +1826,47 @@ def sym_exec_ins(params):
     elif instr_parts[0] == "SSTORE":
         owner_path_condition = []
         solver_owner = Solver()
+        path_condition_sstore = path_conditions_and_vars["path_condition"]
         if len(stack) > 1:
             #log.info("we are here")
             for call_pc in calls:
                 validator.instructions_vulnerable_to_callstack[call_pc] = True
             global_state["pc"] = global_state["pc"] + 1
-            # log.info("wh stack:")
-            # log.info(stack)
-            # log.info(taint_stack)
             stored_address = stack.pop(0)
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
-            #log.info("taint value"+taint_stored_value)
-            #log.info("stored_address"+stored_address)
-            # log.info("sy stack:")
-            # log.info(stack)
-            # log.info(taint_stack)
-            #log.info("taint_stored_value:")
-            #log.info(taint_stored_value)
-            # log.info("stored_address:")
-            # log.info(stored_address)
             if isReal(stored_address):
                 # note that the stored_value could be unknown
                 global_state["Ia"][stored_address] = stored_value
-           #     log.info(global_state["Ia"][stored_address])
-            #    log.info("test1")
-             #   log.info(stored_address)
-              #  log.info("test2")
-               # log.info(stored_value)
                 if taint_stored_value == 1:
-                    #if stored_address in var_state :
-                    stored_address = int(stored_address)
+                    # if stored_address in var_state :
+                    try:
+                        stored_address = int(stored_address)
+                    except ValueError:
+                        stored_address = stored_address
+                    flag = False
+                    if stored_address in global_params.PATH_CONDITION:
+                        if global_params.PATH_CONDITION[stored_address] == 1:
+                            for condition in path_condition_sstore:
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("onlyowner worked")
+                            else:
+                                log.info("onlyowner not worked")
+
+
+                    else :
+                        for condition in path_condition_sstore:
+                            if str(condition).find('Is) ==') >= 0:
+                                flag = True
+                                break
+                        if flag:
+                            global_params.PATH_CONDITION[stored_address] = 2
+                        else:
+                            global_params.PATH_CONDITION[stored_address] = 0
                     if stored_address in global_params.VAR_STATE_GLOBAL:
                         var_value = global_params.VAR_STATE_GLOBAL[stored_address]
                         if var_value == 1:
@@ -1865,33 +1875,69 @@ def sym_exec_ins(params):
                             res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
                             log.info(res)
                             if stored_address in global_params.SSTORE_STACK:
-                               # log.info("recipent success")
+                                # log.info("recipent success")
                                 for condition in global_params.SSTORE_STACK[stored_address]:
-                                #    log.info("recipient success")
+                                    #    log.info("recipient success")
                                     owner_path_condition.append(condition)
                                     solver_owner.add(condition)
                                 result = not (solver_owner.check == unsat)
                                 if result:
                                     log.info("path_condition is satisfied")
+                            if stored_address in global_params.PATH_CONDITION:
+                                if global_params.PATH_CONDITION[stored_address] == 3:
+                                    for condition in path_condition_sstore:
+                                        if str(condition).find('Is) ==') >= 0:
+                                            flag = True
+                                            break
+                                if flag:
+                                    log.info("Taint target onlyowner, no bug")
+                                else:
+                                    log.info("Taint target have not onlyowner,taint bug")
+
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2
                         log.info("if use in call taint happen")
                         log.info(stored_address)
                     if not (stored_address in global_params.SSTORE_STACK):
-                       global_params.SSTORE_STACK[stored_address] = []
+                        global_params.SSTORE_STACK[stored_address] = []
                     global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
-                    #log.info(path_conditions_and_vars["path_condition"])
+                    # log.info(path_conditions_and_vars["path_condition"])
             else:
                 # note that the stored_value could be unknown
                 global_state["Ia"][str(stored_address)] = stored_value
-                #log.info("store")
-                #log.info(taint_stored_value)
+                # log.info("store")
+                # log.info(taint_stored_value)
                 if taint_stored_value == 1:
                     # log.info("test3")
                     # log.info(stored_address)
                     # log.info("test4")
                     # log.info(stored_value)
-                    stored_address = int(stored_address)
+                    try:
+                        stored_address = int(stored_address)
+                    except ValueError:
+                        stored_address = stored_address
+                    flag = False
+                    if stored_address in global_params.PATH_CONDITION:
+                        if global_params.PATH_CONDITION[stored_address] == 1:
+                            for condition in path_condition_sstore:
+                                if str(condition).find('Is) ==') >= 0:
+                                    flag = True
+                                    break
+                            if flag:
+                                log.info("onlyowner worked")
+                            else:
+                                log.info("onlyowner not worked")
+
+                    else:
+                        for condition in path_condition_sstore:
+                            if str(condition).find('Is) ==') >= 0:
+                                flag = True
+                                break
+                        if flag:
+                            global_params.PATH_CONDITION[stored_address] = 2
+                        else:
+                            global_params.PATH_CONDITION[stored_address] = 0
+
                     if stored_address in global_params.VAR_STATE_GLOBAL:
                         var_value = global_params.VAR_STATE_GLOBAL[int(stored_address)]
                         if var_value == 1:
@@ -1900,12 +1946,33 @@ def sym_exec_ins(params):
                             res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
 
                             log.info(res)
+                            if stored_address in global_params.SSTORE_STACK:
+                                # log.info("recipent success")
+                                for condition in global_params.SSTORE_STACK[stored_address]:
+                                    #    log.info("recipient success")
+                                    owner_path_condition.append(condition)
+                                    solver_owner.add(condition)
+                                log.info(owner_path_condition)
+                                result = not (solver_owner.check == unsat)
+                                if result:
+                                    log.info("path_condition is satisfied")
+                            if stored_address in global_params.PATH_CONDITION:
+                                if global_params.PATH_CONDITION[stored_address] == 3:
+                                    for condition in path_condition_sstore:
+                                        if str(condition).find('Is) ==') >= 0:
+                                            flag = True
+                                            break
+                                if flag:
+                                    log.info("Taint target onlyowner, no bug")
+                                else:
+                                    log.info("Taint target have not onlyowner,taint bug")
+
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2
                         log.info("if use in call taint happen")
 
                     if not (stored_address in global_params.SSTORE_STACK):
-                       global_params.SSTORE_STACK[stored_address] = []
+                        global_params.SSTORE_STACK[stored_address] = []
                     global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
         else:
             raise ValueError('STACK underflow')
@@ -1927,6 +1994,7 @@ def sym_exec_ins(params):
         # We need to prepare two branches
         if len(stack) > 1:
             target_address = stack.pop(0)
+            taint_target_address = taint_stack.pop(0)
             if isSymbolic(target_address):
                 try:
                     target_address = int(str(simplify(target_address)))
@@ -2053,7 +2121,7 @@ def sym_exec_ins(params):
                     validator.instructions_vulnerable_to_callstack[call_pc] = False
             global_state["pc"] = global_state["pc"] + 1
             outgas = stack.pop(0)
-            taint_outgas =  taint_stack.pop(0)
+            taint_outgas = taint_stack.pop(0)
             recipient = stack.pop(0)
             taint_recipient = taint_stack.pop(0)
             transfer_amount = stack.pop(0)
@@ -2154,6 +2222,7 @@ def sym_exec_ins(params):
             if isReal(transfer_amount):
                 if transfer_amount == 0:
                     stack.insert(0, 1)   # x = 0
+                    taint_stack.insert(0,SAFE_FLAG)
                     return
 
             # Let us ignore the call depth

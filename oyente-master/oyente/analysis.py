@@ -40,7 +40,7 @@ def display_analysis(analysis):
 
 # Check if this call has the Reentrancy bug
 # Return true if it does, false otherwise
-def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack,source_map,var_state):
+def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack):
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     owner_path_condition = []
@@ -140,8 +140,27 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         log.info("Reentrancy_bug? " + str(ret_val))
     
     if ret_val:
-        log.info(stack)
-        log.info(taint_stack)
+        # log.info(stack)
+        # log.info(taint_stack)
+        ms_condition = ""
+        for condition in path_condition:
+            if str(condition).find('Is) ==') >= 0:
+                ms_condition = str(condition)
+                break
+        if ms_condition != "":
+            ms_owner = ms_condition.find("Ia_store")
+            if ms_owner >= 0:
+                ms_owner_key = ms_condition.split('-')
+                ms_owner_num = int(ms_owner_key[1])
+                if ms_owner_num in global_params.PATH_CONDITION:
+                    if global_params.PATH_CONDITION[ms_owner_num] == 2:
+                        log.info("taint owner, Onlyowner worked")
+                    else:
+                        log.info("taint owner, Onlyowner not worked")
+                else:
+                    global_params.PATH_CONDITION[ms_owner_num] = 1
+            else:
+                log.info("It does not matter with syExec")
         if target_recipient:
             log.info(target_recipient)
         if taint_transfer_amount:
@@ -171,6 +190,12 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                         result = not (solver_owner.check == unsat)
                         if result:
                             log.info("path_condition is satisfied")
+                    if var_address in global_params.PATH_CONDITION:
+                        if global_params.PATH_CONDITION[var_address] == 2:
+                            log.info("Taint target onlyowner, no bug")
+                        elif global_params.PATH_CONDITION[var_address] == 1:
+                            log.info("Taint target have not onlyowner,taint bug")
+
                 else:
                     #log.info(var_address)
                     global_params.VAR_STATE_GLOBAL[var_address] = 1
@@ -181,6 +206,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                        global_params.SSTORE_STACK[var_address] = []
                     global_params.SSTORE_STACK[var_address].append(path_conditions_and_vars["path_condition"])
                    # log.info(path_conditions_and_vars["path_condition"])
+                    if not (var_address in global_params.PATH_CONDITION):
+                        global_params.PATH_CONDITION[var_address] = 3
         else:
             log.info("it does not matter")
 
@@ -280,7 +307,7 @@ def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
 
     return (gas_increment, new_gas_memory)
 
-def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack,source_map,var_state):
+def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack):
     gas_increment, gas_memory = calculate_gas(opcode, stack, mem, global_state, analysis, solver)
     analysis["gas"] += gas_increment
     analysis["gas_mem"] = gas_memory
@@ -301,7 +328,7 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
         if isSymbolic(recipient):
             recipient = simplify(recipient)
 
-        reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack,source_map,var_state)
+        reentrancy_result = check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack)
         analysis["reentrancy_bug"].append(reentrancy_result)
         analysis["money_concurrency_bug"].append(global_state["pc"])
         analysis["money_flow"].append(("Ia", str(recipient), str(transfer_amount)))
