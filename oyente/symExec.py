@@ -1967,7 +1967,10 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     # log.info(stored_address)
                     # log.info("test4")
                     # log.info(stored_value)
-                    stored_address = int(stored_address)
+                    try:
+                        stored_address = int(stored_address)
+                    except ValueError:
+                        stored_address = stored_address
                     flag = False
                     if stored_address in global_params.PATH_CONDITION:
                         if global_params.PATH_CONDITION[stored_address] == 1:
@@ -1991,7 +1994,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             global_params.PATH_CONDITION[stored_address] = 0
 
                     if stored_address in global_params.VAR_STATE_GLOBAL:
-                        var_value = global_params.VAR_STATE_GLOBAL[int(stored_address)]
+                        var_value = global_params.VAR_STATE_GLOBAL[stored_address]
                         if var_value == 1:
                             log.info("taint_happen:")
                             stored_v = str(stored_value)

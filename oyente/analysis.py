@@ -125,9 +125,14 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
             if res >= 0:
                 res1 = str(single).split('-')
                 result.append(res1[1])
+        log.info("result:")
+        log.info(result)
         if len(result) != 0:
             for var_address in result:
-                var_address = int(var_address)
+                try:
+                    var_address = int(var_address)
+                except ValueError:
+                    var_address = var_address
                 if var_address in global_params.VAR_STATE_GLOBAL:
                     if global_params.VAR_STATE_GLOBAL[int(var_address)] == 2:
                         log.info("taint_happen in:")
