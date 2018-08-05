@@ -1849,7 +1849,7 @@ def sym_exec_ins(params):
                     if stored_address in global_params.PATH_CONDITION:
                         if global_params.PATH_CONDITION[stored_address] == 1:
                             for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
+                                if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                                     flag = True
                                     break
                             if flag:
@@ -1860,12 +1860,13 @@ def sym_exec_ins(params):
 
                     else :
                         for condition in path_condition_sstore:
-                            if str(condition).find('Is) ==') >= 0:
+                            if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                                 flag = True
                                 break
                         if flag:
                             global_params.PATH_CONDITION[stored_address] = 2
                         else:
+                            log.info(path_condition_sstore)
                             global_params.PATH_CONDITION[stored_address] = 0
                     if stored_address in global_params.VAR_STATE_GLOBAL:
                         var_value = global_params.VAR_STATE_GLOBAL[stored_address]
@@ -1889,10 +1890,10 @@ def sym_exec_ins(params):
                                         if str(condition).find('Is) ==') >= 0:
                                             flag = True
                                             break
-                                if flag:
-                                    log.info("Taint target onlyowner, no bug")
-                                else:
-                                    log.info("Taint target have not onlyowner,taint bug")
+                                    if flag:
+                                        log.info("Taint target onlyowner, no bug")
+                                    else:
+                                        log.info("Taint target have not onlyowner,taint bug")
 
                     else:
                         global_params.VAR_STATE_GLOBAL[stored_address] = 2

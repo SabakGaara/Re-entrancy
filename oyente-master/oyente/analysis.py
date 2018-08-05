@@ -153,14 +153,14 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 ms_owner_key = ms_condition.split('-')
                 ms_owner_num = int(ms_owner_key[1])
                 if ms_owner_num in global_params.PATH_CONDITION:
-                    if global_params.PATH_CONDITION[ms_owner_num] == 2:
-                        log.info("taint owner, Onlyowner worked")
+                    if global_params.PATH_CONDITION[ms_owner_num] == 0:
+                        log.info("Onlyowner not worked")
                     else:
-                        log.info("taint owner, Onlyowner not worked")
+                        log.info("Onlyowner worked")
                 else:
                     global_params.PATH_CONDITION[ms_owner_num] = 1
             else:
-                log.info("It does not matter with syExec")
+                log.info( "It does not matter with syExec")
         if target_recipient:
             log.info(target_recipient)
         if taint_transfer_amount:
@@ -208,8 +208,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                    # log.info(path_conditions_and_vars["path_condition"])
                     if not (var_address in global_params.PATH_CONDITION):
                         global_params.PATH_CONDITION[var_address] = 3
-        else:
-            log.info("it does not matter")
+    else:
+        log.info("it does not matter")
 
     global reported
     if not reported:
