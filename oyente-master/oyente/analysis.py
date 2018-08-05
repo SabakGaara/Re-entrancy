@@ -144,7 +144,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         # log.info(taint_stack)
         ms_condition = ""
         for condition in path_condition:
-            if str(condition).find('Is) ==') >= 0:
+            if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                 ms_condition = str(condition)
                 break
         if ms_condition != "":
