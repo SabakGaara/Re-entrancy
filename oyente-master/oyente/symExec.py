@@ -1836,7 +1836,7 @@ def sym_exec_ins(params):
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
-            if isReal():
+            if isReal(stored_address):
                 # note that the stored_value could be unknown
                 global_state["Ia"][stored_address] = stored_value
                 if taint_stored_value == 1:
@@ -1852,9 +1852,9 @@ def sym_exec_ins(params):
                             flag = True
                             break
                     if not flag:
-
-                        if global_params.PATH_CONDITION[stored_address] == 1:
-                            log.info("onlyowner not worked")
+                        if stored_address in global_params.PATH_CONDITION:
+                            if global_params.PATH_CONDITION[stored_address] == 1:
+                                log.info("onlyowner not worked")
                         # elif global_params.PATH_CONDITION[stored_address] == 2:
                         #     if not flag:
                         #         global_params.PATH_CONDITION[stored_address] = 0
@@ -1918,8 +1918,9 @@ def sym_exec_ins(params):
                             break
                     if not flag:
 
-                        if global_params.PATH_CONDITION[stored_address] == 1:
-                            log.info("onlyowner not worked")
+                        if stored_address in global_params.PATH_CONDITION:
+                            if global_params.PATH_CONDITION[stored_address] == 1:
+                                log.info("onlyowner not worked")
                         # elif global_params.PATH_CONDITION[stored_address] == 2:
                         #     if not flag:
                         #         global_params.PATH_CONDITION[stored_address] = 0
