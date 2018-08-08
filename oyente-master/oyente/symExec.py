@@ -1836,7 +1836,7 @@ def sym_exec_ins(params):
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
-            if isReal(stored_address):
+            if isReal():
                 # note that the stored_value could be unknown
                 global_state["Ia"][stored_address] = stored_value
                 if taint_stored_value == 1:
@@ -1846,61 +1846,56 @@ def sym_exec_ins(params):
                     except ValueError:
                         stored_address = stored_address
                     flag = False
-                    if stored_address in global_params.PATH_CONDITION:
+
+                    for condition in path_condition_sstore:
+                        if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                            flag = True
+                            break
+                    if not flag:
+
                         if global_params.PATH_CONDITION[stored_address] == 1:
-                            for condition in path_condition_sstore:
-                                if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                                    flag = True
-                                    break
-                            if flag:
-                                log.info("onlyowner worked")
-                            else:
-                                log.info("onlyowner not worked")
+                            log.info("onlyowner not worked")
+                        # elif global_params.PATH_CONDITION[stored_address] == 2:
+                        #     if not flag:
+                        #         global_params.PATH_CONDITION[stored_address] = 0
 
-
-                    else :
-                        for condition in path_condition_sstore:
-                            if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                                flag = True
-                                break
-                        if flag:
-                            global_params.PATH_CONDITION[stored_address] = 2
                         else:
                             global_params.PATH_CONDITION[stored_address] = 0
-                    if stored_address in global_params.VAR_STATE_GLOBAL:
-                        var_value = global_params.VAR_STATE_GLOBAL[stored_address]
-                        if var_value == 1:
-                            log.info("taint_happen")
-                            stored_v = str(stored_value)
-                            res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
-                            log.info(res)
-                            if stored_address in global_params.SSTORE_STACK:
-                                # log.info("recipent success")
-                                for condition in global_params.SSTORE_STACK[stored_address]:
-                                    #    log.info("recipient success")
-                                    owner_path_condition.append(condition)
-                                    solver_owner.add(condition)
-                                result = not (solver_owner.check == unsat)
-                                if result:
-                                    log.info("path_condition is satisfied")
-                            if stored_address in global_params.PATH_CONDITION:
-                                if global_params.PATH_CONDITION[stored_address] == 3:
-                                    for condition in path_condition_sstore:
-                                        if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                                            flag = True
-                                            break
-                                    if flag:
-                                        log.info("Taint target onlyowner, no bug")
-                                    else:
-                                        log.info("Taint target have not onlyowner,taint bug")
+                        if stored_address in global_params.VAR_STATE_GLOBAL:
+                            var_value = global_params.VAR_STATE_GLOBAL[stored_address]
+                            if var_value == 1:
 
-                    else:
-                        global_params.VAR_STATE_GLOBAL[stored_address] = 2
-                        log.info("if use in call taint happen")
-                        log.info(stored_address)
-                    if not (stored_address in global_params.SSTORE_STACK):
-                        global_params.SSTORE_STACK[stored_address] = []
-                    global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
+                                if stored_address in global_params.SSTORE_STACK:
+                                    # log.info("recipent success")
+                                    for condition in global_params.SSTORE_STACK[stored_address]:
+                                        #    log.info("recipient success")
+                                        owner_path_condition.append(condition)
+                                        solver_owner.add(condition)
+                                    result = not (solver_owner.check == unsat)
+                                    if result:
+                                        log.info("path_condition is satisfied")
+                                        log.info("taint_happen")
+                                        stored_v = str(stored_value)
+                                        res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
+                                        log.info(res)
+                            # if stored_address in global_params.PATH_CONDITION:
+                            #     if global_params.PATH_CONDITION[stored_address] == 3:
+                            #         for condition in path_condition_sstore:
+                            #             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                            #                 flag = True
+                            #                 break
+                            #         if flag:
+                            #             log.info("Taint target onlyowner, no bug")
+                            #         else:
+                            #             log.info("Taint target have not onlyowner,taint bug")
+
+                        else:
+                            global_params.VAR_STATE_GLOBAL[stored_address] = 2
+                            log.info("if use in call taint happen")
+                            log.info(stored_address)
+                            if not (stored_address in global_params.SSTORE_STACK):
+                                global_params.SSTORE_STACK[stored_address] = []
+                            global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
                     # log.info(path_conditions_and_vars["path_condition"])
             else:
                 # note that the stored_value could be unknown
@@ -1917,63 +1912,55 @@ def sym_exec_ins(params):
                     except ValueError:
                         stored_address = stored_address
                     flag = False
-                    if stored_address in global_params.PATH_CONDITION:
-                        if global_params.PATH_CONDITION[stored_address] == 1:
-                            for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
-                                    flag = True
-                                    break
-                            if flag:
-                                log.info("onlyowner worked")
-                            else:
-                                log.info("onlyowner not worked")
+                    for condition in path_condition_sstore:
+                        if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                            flag = True
+                            break
+                    if not flag:
 
-                    else:
-                        for condition in path_condition_sstore:
-                            if str(condition).find('Is) ==') >= 0:
-                                flag = True
-                                break
-                        if flag:
-                            global_params.PATH_CONDITION[stored_address] = 2
+                        if global_params.PATH_CONDITION[stored_address] == 1:
+                            log.info("onlyowner not worked")
+                        # elif global_params.PATH_CONDITION[stored_address] == 2:
+                        #     if not flag:
+                        #         global_params.PATH_CONDITION[stored_address] = 0
+
                         else:
                             global_params.PATH_CONDITION[stored_address] = 0
+                        if stored_address in global_params.VAR_STATE_GLOBAL:
+                            var_value = global_params.VAR_STATE_GLOBAL[stored_address]
+                            if var_value == 1:
 
-                    if stored_address in global_params.VAR_STATE_GLOBAL:
-                        var_value = global_params.VAR_STATE_GLOBAL[int(stored_address)]
-                        if var_value == 1:
-                            log.info("taint_happen:")
-                            stored_v = str(stored_value)
-                            res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
+                                if stored_address in global_params.SSTORE_STACK:
+                                    # log.info("recipent success")
+                                    for condition in global_params.SSTORE_STACK[stored_address]:
+                                        #    log.info("recipient success")
+                                        owner_path_condition.append(condition)
+                                        solver_owner.add(condition)
+                                    result = not (solver_owner.check == unsat)
+                                    if result:
+                                        log.info("path_condition is satisfied")
+                                        log.info("taint_happen")
+                                        stored_v = str(stored_value)
+                                        res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
+                                        log.info(res)
+                            # if stored_address in global_params.PATH_CONDITION:
+                            #     if global_params.PATH_CONDITION[stored_address] == 3:
+                            #         for condition in path_condition_sstore:
+                            #             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                            #                 flag = True
+                            #                 break
+                            #         if flag:
+                            #             log.info("Taint target onlyowner, no bug")
+                            #         else:
+                            #             log.info("Taint target have not onlyowner,taint bug")
 
-                            log.info(res)
-                            if stored_address in global_params.SSTORE_STACK:
-                                # log.info("recipent success")
-                                for condition in global_params.SSTORE_STACK[stored_address]:
-                                    #    log.info("recipient success")
-                                    owner_path_condition.append(condition)
-                                    solver_owner.add(condition)
-                                log.info(owner_path_condition)
-                                result = not (solver_owner.check == unsat)
-                                if result:
-                                    log.info("path_condition is satisfied")
-                            if stored_address in global_params.PATH_CONDITION:
-                                if global_params.PATH_CONDITION[stored_address] == 3:
-                                    for condition in path_condition_sstore:
-                                        if str(condition).find('Is) ==') >= 0:
-                                            flag = True
-                                            break
-                                if flag:
-                                    log.info("Taint target onlyowner, no bug")
-                                else:
-                                    log.info("Taint target have not onlyowner,taint bug")
-
-                    else:
-                        global_params.VAR_STATE_GLOBAL[stored_address] = 2
-                        log.info("if use in call taint happen")
-
-                    if not (stored_address in global_params.SSTORE_STACK):
-                        global_params.SSTORE_STACK[stored_address] = []
-                    global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
+                        else:
+                            global_params.VAR_STATE_GLOBAL[stored_address] = 2
+                            log.info("if use in call taint happen")
+                            log.info(stored_address)
+                            if not (stored_address in global_params.SSTORE_STACK):
+                                global_params.SSTORE_STACK[stored_address] = []
+                            global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
         else:
             raise ValueError('STACK underflow')
     elif instr_parts[0] == "JUMP":
