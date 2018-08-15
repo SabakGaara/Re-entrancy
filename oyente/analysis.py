@@ -37,7 +37,6 @@ def display_analysis(analysis):
 # Check if this call has the Reentrancy bug
 # Return true if it does, false otherwise
 def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack):
-   # log.info("I am in")
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     owner_path_condition = []
@@ -91,8 +90,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     # solver.add(stack[2] > BitVec('Iv', 256))
     # if it is not feasible to re-execute the call, its not a bug
     ret_val = not (solver.check() == unsat)
-    if global_params.DEBUG_MODE:
-        log.info("Reentrancy_bug? " + str(ret_val))
+    #log.info("Reentrancy_bug? " + str(ret_val))
     if ret_val:
         ms_condition = ""
         for condition in path_condition:
@@ -116,6 +114,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     #     log.info("Onlyowner worked")
                 else:
                     global_params.PATH_CONDITION[ms_owner_num] = 1
+<<<<<<< HEAD
                     if taint_recipient:
                         log.info("taint_target if onlyower not worked")
             # else:
@@ -157,6 +156,44 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                             #         log.info("Taint target onlyowner, no bug")
                             #     elif global_params.PATH_CONDITION[var_address] == 1:
                             #         log.info("Taint target have not onlyowner,taint bug")
+=======
+            else:
+                log.info("It does not matter with syExec")
+        if target_recipient:
+            log.info(target_recipient)
+        if taint_transfer_amount:
+            log.info(target_transfer_amount)
+        result = []
+        for single in stack:
+            res = str(single).find("Ia_store")
+            if res >= 0:
+                res1 = str(single).split('-')
+                result.append(res1[1])
+        if len(result) != 0:
+            for var_address in result:
+                try:
+                    var_address = int(var_address)
+                except:
+                    var_address = var_address
+                if var_address in global_params.VAR_STATE_GLOBAL:
+                    if global_params.VAR_STATE_GLOBAL[var_address] == 2:
+                        log.info("taint_happen in:")
+                        log.info(global_state["Ia"][var_address])
+                        if var_address in global_params.SSTORE_STACK:
+                           # log.info("recipent success")
+                           for condition in global_params.SSTORE_STACK[var_address]:
+                               #   log.info("recipient success")
+                               owner_path_condition.append(condition)
+                               solver_owner.add(condition)
+                           result = not (solver_owner.check == unsat)
+                           if result:
+                               log.info("path_condition is satisfied")
+                        if var_address in global_params.PATH_CONDITION:
+                            if global_params.PATH_CONDITION[var_address] == 2:
+                                log.info("Taint target onlyowner, no bug")
+                            elif global_params.PATH_CONDITION[var_address] == 1:
+                                log.info("Taint target have not onlyowner,taint bug")
+>>>>>>> b80472f1d93640c7dd986157e3e81ec17e5a341c
 
                         else:
                             # log.info(var_address)
@@ -279,8 +316,9 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
         transfer_amount = stack[2]
         # log.info("update")
         # log.info(recipient)
-        if isReal(transfer_amount) and transfer_amount == 0:
-            return
+        #  log.info("i am in")
+        #if isReal(transfer_amount) and transfer_amount == 0:
+         #   return
         if isSymbolic(recipient):
             recipient = simplify(recipient)
 

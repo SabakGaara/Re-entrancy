@@ -2014,6 +2014,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 #         else:
                                 #             log.info("Taint target have not onlyowner,taint bug")
 
+<<<<<<< HEAD
                             else:
                                 global_params.VAR_STATE_GLOBAL[stored_address] = 2
                                 log.info("if use in call taint happen")
@@ -2022,6 +2023,11 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                     global_params.SSTORE_STACK[stored_address] = []
                                 global_params.SSTORE_STACK[stored_address].append(
                                     path_conditions_and_vars["path_condition"])
+=======
+                    if not (stored_address in global_params.SSTORE_STACK):
+                        global_params.SSTORE_STACK[stored_address] = []
+                    global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
+>>>>>>> b80472f1d93640c7dd986157e3e81ec17e5a341c
         else:
             raise ValueError('STACK underflow')
     elif opcode == "JUMP":
