@@ -2041,7 +2041,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     if not (stored_address in global_params.SSTORE_STACK):
                         global_params.SSTORE_STACK[stored_address] = []
                     global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
-            else:
+        else:
             raise ValueError('STACK underflow')
     elif opcode == "JUMP":
         if len(stack) > 0:

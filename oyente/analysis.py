@@ -37,7 +37,6 @@ def display_analysis(analysis):
 # Check if this call has the Reentrancy bug
 # Return true if it does, false otherwise
 def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_stack):
-   # log.info("I am in")
     path_condition = path_conditions_and_vars["path_condition"]
     new_path_condition = []
     owner_path_condition = []
@@ -91,11 +90,8 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     # solver.add(stack[2] > BitVec('Iv', 256))
     # if it is not feasible to re-execute the call, its not a bug
     ret_val = not (solver.check() == unsat)
-    if global_params.DEBUG_MODE:
-        log.info("Reentrancy_bug? " + str(ret_val))
+    #log.info("Reentrancy_bug? " + str(ret_val))
     if ret_val:
-        #log.info("ret_val")
-        #log.info(ret_val)
         ms_condition = ""
         for condition in path_condition:
             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
@@ -128,8 +124,6 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
             if res >= 0:
                 res1 = str(single).split('-')
                 result.append(res1[1])
-        log.info("result:")
-        log.info(result)
         if len(result) != 0:
             for var_address in result:
                 try:
@@ -275,8 +269,9 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
         transfer_amount = stack[2]
         # log.info("update")
         # log.info(recipient)
-        if isReal(transfer_amount) and transfer_amount == 0:
-            return
+        #  log.info("i am in")
+        #if isReal(transfer_amount) and transfer_amount == 0:
+         #   return
         if isSymbolic(recipient):
             recipient = simplify(recipient)
 
