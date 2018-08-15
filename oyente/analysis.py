@@ -134,11 +134,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
             for var_address in result:
                 try:
                     var_address = int(var_address)
-<<<<<<< HEAD
                 except:
-=======
-                except ValueError:
->>>>>>> 48bbd118603a852ea0dded87e6f21a4bcad2e955
                     var_address = var_address
                 if var_address in global_params.VAR_STATE_GLOBAL:
                     if global_params.VAR_STATE_GLOBAL[var_address] == 2:
