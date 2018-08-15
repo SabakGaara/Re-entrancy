@@ -1899,23 +1899,33 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 global_state["Ia"][stored_address] = stored_value
                 if taint_stored_value == 1:
                     # if stored_address in var_state :
-                    stored_address = int(stored_address)
+                    try:
+                        stored_address = int(stored_address)
+                    except:
+                        stored_address = stored_address
                     flag = False
                     if stored_address in global_params.PATH_CONDITION:
+
+                        for condition in path_condition_sstore:
+                            if (str(condition).find('Is) ==') >= 0) or (
+                                    str(condition).find("== Extract(159, 0, Is)") >= 0):
+                                flag = True
+                                break
                         if global_params.PATH_CONDITION[stored_address] == 1:
-                            for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
-                                    flag = True
-                                    break
                             if flag:
                                 log.info("onlyowner worked")
                             else:
                                 log.info("onlyowner not worked")
-
+                        elif global_params.PATH_CONDITION[stored_address] == 2:
+                            if flag:
+                                log.info("onlyowner worked")
+                            else:
+                                global_params.PATH_CONDITION[stored_address] = 0
 
                     else:
                         for condition in path_condition_sstore:
-                            if str(condition).find('Is) ==') >= 0:
+                            if (str(condition).find('Is) ==') >= 0) or (
+                                    str(condition).find("== Extract(159, 0, Is)") >= 0):
                                 flag = True
                                 break
                         if flag:
@@ -1941,7 +1951,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             if stored_address in global_params.PATH_CONDITION:
                                 if global_params.PATH_CONDITION[stored_address] == 3:
                                     for condition in path_condition_sstore:
-                                        if str(condition).find('Is) ==') >= 0:
+                                        if (str(condition).find('Is) ==') >= 0) or (
+                                                str(condition).find("== Extract(159, 0, Is)") >= 0):
                                             flag = True
                                             break
                                 if flag:
@@ -1966,13 +1977,16 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     # log.info("test3")
                     # log.info(stored_address)
                     # log.info("test4")
-                    # log.info(stored_value)
-                    stored_address = int(stored_address)
+                    try:
+                        stored_address = int(stored_address)
+                    except:
+                        stored_address = stored_address
                     flag = False
                     if stored_address in global_params.PATH_CONDITION:
                         if global_params.PATH_CONDITION[stored_address] == 1:
                             for condition in path_condition_sstore:
-                                if str(condition).find('Is) ==') >= 0:
+                                if (str(condition).find('Is) ==') >= 0) or (
+                                        str(condition).find("== Extract(159, 0, Is)") >= 0):
                                     flag = True
                                     break
                             if flag:
@@ -1982,7 +1996,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
 
                     else:
                         for condition in path_condition_sstore:
-                            if str(condition).find('Is) ==') >= 0:
+                            if (str(condition).find('Is) ==') >= 0) or (
+                                    str(condition).find("== Extract(159, 0, Is)") >= 0):
                                 flag = True
                                 break
                         if flag:
@@ -2026,7 +2041,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     if not (stored_address in global_params.SSTORE_STACK):
                         global_params.SSTORE_STACK[stored_address] = []
                     global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
-        else:
+            else:
             raise ValueError('STACK underflow')
     elif opcode == "JUMP":
         if len(stack) > 0:

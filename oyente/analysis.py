@@ -98,19 +98,22 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         #log.info(ret_val)
         ms_condition = ""
         for condition in path_condition:
-            if str(condition).find('Is) ==') >= 0:
+            if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                 ms_condition = str(condition)
                 break
         if ms_condition != "":
             ms_owner = ms_condition.find("Ia_store")
             if ms_owner >= 0:
                 ms_owner_key = ms_condition.split('-')
-                ms_owner_num = int(ms_owner_key[1])
+                try:
+                    ms_owner_num = int(ms_owner_key[1])
+                except:
+                    ms_owner_num = ms_owner_key[1]
                 if ms_owner_num in global_params.PATH_CONDITION:
-                    if global_params.PATH_CONDITION[ms_owner_num] == 2:
-                        log.info("taint owner, Onlyowner worked")
+                    if global_params.PATH_CONDITION[ms_owner_num] == 0:
+                        log.info("Onlyowner not worked")
                     else:
-                        log.info("taint owner, Onlyowner not worked")
+                        log.info("Onlyowner worked")
                 else:
                     global_params.PATH_CONDITION[ms_owner_num] = 1
             else:
@@ -127,9 +130,12 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 result.append(res1[1])
         if len(result) != 0:
             for var_address in result:
-                var_address = int(var_address)
+                try:
+                    var_address = int(var_address)
+                except:
+                    var_address = var_address
                 if var_address in global_params.VAR_STATE_GLOBAL:
-                    if global_params.VAR_STATE_GLOBAL[int(var_address)] == 2:
+                    if global_params.VAR_STATE_GLOBAL[var_address] == 2:
                         log.info("taint_happen in:")
                         log.info(global_state["Ia"][var_address])
                         if var_address in global_params.SSTORE_STACK:
@@ -149,7 +155,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
 
                 else:
                     # log.info(var_address)
-                    global_params.VAR_STATE_GLOBAL[int(var_address)] = 1
+                    global_params.VAR_STATE_GLOBAL[var_address] = 1
 
                     # log.info(global_params.VAR_STATE_GLOBAL[int(var_address)])
                     log.info("wait")
