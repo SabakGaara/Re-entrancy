@@ -1910,9 +1910,9 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             flag = True
                             break
                     if not flag:
-
-                        if global_params.PATH_CONDITION[stored_address] == 1:
-                            log.info("onlyowner not worked")
+                        if stored_address in global_params.PATH_CONDITION:
+                            if global_params.PATH_CONDITION[stored_address] == 1:
+                                log.info("onlyowner not worked")
                         # elif global_params.PATH_CONDITION[stored_address] == 2:
                         #     if not flag:
                         #         global_params.PATH_CONDITION[stored_address] = 0
