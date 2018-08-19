@@ -13,7 +13,9 @@ import logging
 import six
 from collections import namedtuple
 from z3 import *
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 from vargenerator import *
 from ethereum_data import *
 from basicblock import BasicBlock
@@ -21,7 +23,6 @@ from analysis import *
 from test_evm.global_test_params import (TIME_OUT, UNKNOWN_INSTRUCTION,
                                          EXCEPTION, PICKLE_PATH)
 from vulnerability import CallStack, TimeDependency, MoneyConcurrency, Reentrancy, AssertionFailure, ParityMultisigBug2, IntegerUnderflow, IntegerOverflow
-import global_params
 
 log = logging.getLogger(__name__)
 
@@ -568,6 +569,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     mem = params.mem
     memory = params.memory
     global_state = params.global_state
+    global_params.globals_state = global_state
     sha3_list = params.sha3_list
     path_conditions_and_vars = params.path_conditions_and_vars
     analysis = params.analysis
@@ -1890,137 +1892,98 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             for call_pc in calls:
                 calls_affect_state[call_pc] = True
             global_state["pc"] = global_state["pc"] + 1
+
             stored_address = stack.pop(0)
+
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
+            # The solvtion of key
+            key_value = stack[0]
+            ms_key = key_value.find("Ia_store")
+            if ms_key >= 0:
+                ms_owner_key = ms_key.split('-')
+                try:
+                    ms_owner_num = int(ms_owner_key[1])
+                except:
+                    ms_owner_num = ms_owner_key[1]
+                if not(ms_owner_num in global_params.TREE):
+                    global_params.TREE[ms_owner_num] = []
+
             if isReal(stored_address):
                 # note that the stored_value could be unknown
+                try:
+                    stored_address = int(stored_address)
+                except:
+                    stored_address = stored_address
+
                 global_state["Ia"][stored_address] = stored_value
+                if not(stored_address in global_params.TREE):
+                    global_params.TREE[stored_address] = []
+
+                flag = False
+                for condition in path_condition_sstore:
+                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                        flag = True
+                        pc_key = condition
+                        break
+                if flag:
+                    ms_store = pc_key.find("Ia_store")
+                    if ms_store >= 0:
+                        ms_store_key = ms_store.split('-')
+                        try:
+                            ms_store_num = int(ms_store_key[1])
+                        except:
+                            ms_store_num = ms_store_key[1]
+                        if ms_store_num in global_params.TREE:
+                            if not (ms_store_num in global_params.MODIFIER):
+                                global_params.MODIFIER.append(ms_store_num)
+                        else:
+                            global_params.TREE[ms_owner_num] = []
+                            global_params.MODIFIER.append(ms_owner_num)
                 if taint_stored_value == 1:
                     # if stored_address in var_state :
-                    try:
-                        stored_address = int(stored_address)
-                    except:
-                        stored_address = stored_address
-                    flag = False
+                    if not flag:
+                        if not (stored_address in global_params.TAINT):
+                            global_params.TAINT.append(stored_address)
+                    if flag and ms_store >= 0:
+                        global_params.TREE[stored_address].append(ms_store_num)
+                elif ms_key >= 0:
+                    global_params.TREE[stored_address].append(ms_owner_num)
+            else:
+                    # note that the stored_value could be unknown
+                    if not (stored_address in global_params.TREE):
+                        global_params.TREE[stored_address] = []
 
+                    flag = False
                     for condition in path_condition_sstore:
                         if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                             flag = True
+                            pc_key = condition
                             break
-                    if not flag:
-                        if stored_address in global_params.PATH_CONDITION:
-                            if global_params.PATH_CONDITION[stored_address] == 1:
-                                log.info("onlyowner not worked")
-                        # elif global_params.PATH_CONDITION[stored_address] == 2:
-                        #     if not flag:
-                        #         global_params.PATH_CONDITION[stored_address] = 0
-
-                        else:
-                            global_params.PATH_CONDITION[stored_address] = 0
-                        if stored_address in global_params.VAR_STATE_GLOBAL:
-                            var_value = global_params.VAR_STATE_GLOBAL[stored_address]
-                            if var_value == 1:
-
-                                if stored_address in global_params.SSTORE_STACK:
-                                    # log.info("recipent success")
-                                    for condition in global_params.SSTORE_STACK[stored_address]:
-                                        #    log.info("recipient success")
-                                        owner_path_condition.append(condition)
-                                        solver_owner.add(condition)
-                                    result = not (solver_owner.check == unsat)
-                                    if result:
-                                        log.info("path_condition is satisfied")
-                                        log.info("taint_happen")
-                                        stored_v = str(stored_value)
-                                        res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
-                                        log.info(res)
-                            # if stored_address in global_params.PATH_CONDITION:
-                            #     if global_params.PATH_CONDITION[stored_address] == 3:
-                            #         for condition in path_condition_sstore:
-                            #             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                            #                 flag = True
-                            #                 break
-                            #         if flag:
-                            #             log.info("Taint target onlyowner, no bug")
-                            #         else:
-                            #             log.info("Taint target have not onlyowner,taint bug")
-
-                        else:
-                            global_params.VAR_STATE_GLOBAL[stored_address] = 2
-                            log.info("if use in call taint happen")
-                            log.info(stored_address)
-                            if not (stored_address in global_params.SSTORE_STACK):
-                                global_params.SSTORE_STACK[stored_address] = []
-                            global_params.SSTORE_STACK[stored_address].append(
-                                path_conditions_and_vars["path_condition"])
-                    # log.info(path_conditions_and_vars["path_condition"])
-                else:
-                    # note that the stored_value could be unknown
-                    global_state["Ia"][str(stored_address)] = stored_value
-                    # log.info("store")
-                    # log.info(taint_stored_value)
+                    if flag:
+                        ms_store = pc_key.find("Ia_store")
+                        if ms_store >= 0:
+                            ms_store_key = ms_store.split('-')
+                            try:
+                                ms_store_num = int(ms_store_key[1])
+                            except:
+                                ms_store_num = ms_store_key[1]
+                            if ms_store_num in global_params.TREE:
+                                if not (ms_store_num in global_params.MODIFIER):
+                                    global_params.MODIFIER.append(ms_store_num)
+                            else:
+                                global_params.TREE[ms_owner_num] = []
+                                global_params.MODIFIER.append(ms_owner_num)
                     if taint_stored_value == 1:
-                        # log.info("test3")
-                        # log.info(stored_address)
-                        # log.info("test4")
-                        # log.info(stored_value)
-                        try:
-                            stored_address = int(stored_address)
-                        except ValueError:
-                            stored_address = stored_address
-                        flag = False
-                        for condition in path_condition_sstore:
-                            if (str(condition).find('Is) ==') >= 0) or (
-                                    str(condition).find("== Extract(159, 0, Is)") >= 0):
-                                flag = True
-                                break
+                        # if stored_address in var_state :
                         if not flag:
-
-                            if global_params.PATH_CONDITION[stored_address] == 1:
-                                log.info("onlyowner not worked")
-                            # elif global_params.PATH_CONDITION[stored_address] == 2:
-                            #     if not flag:
-                            #         global_params.PATH_CONDITION[stored_address] = 0
-
-                            else:
-                                global_params.PATH_CONDITION[stored_address] = 0
-                            if stored_address in global_params.VAR_STATE_GLOBAL:
-                                var_value = global_params.VAR_STATE_GLOBAL[stored_address]
-                                if var_value == 1:
-
-                                    if stored_address in global_params.SSTORE_STACK:
-                                        # log.info("recipent success")
-                                        for condition in global_params.SSTORE_STACK[stored_address]:
-                                            #    log.info("recipient success")
-                                            owner_path_condition.append(condition)
-                                            solver_owner.add(condition)
-                                        result = not (solver_owner.check == unsat)
-                                        if result:
-                                            log.info("path_condition is satisfied")
-                                            log.info("taint_happen")
-                                            stored_v = str(stored_value)
-                                            res = stored_v[stored_v.find('Ia_'):stored_v.find(')')]
-                                            log.info(res)
-                                # if stored_address in global_params.PATH_CONDITION:
-                                #     if global_params.PATH_CONDITION[stored_address] == 3:
-                                #         for condition in path_condition_sstore:
-                                #             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                                #                 flag = True
-                                #                 break
-                                #         if flag:
-                                #             log.info("Taint target onlyowner, no bug")
-                                #         else:
-                                #             log.info("Taint target have not onlyowner,taint bug")
-
-                            else:
-                                global_params.VAR_STATE_GLOBAL[stored_address] = 2
-                                log.info("if use in call taint happen")
-                                log.info(stored_address)
-                                if not (stored_address in global_params.SSTORE_STACK):
-                                    global_params.SSTORE_STACK[stored_address] = []
-                                global_params.SSTORE_STACK[stored_address].append(path_conditions_and_vars["path_condition"])
+                            if not (stored_address in global_params.TAINT):
+                                global_params.TAINT.append(stored_address)
+                        if flag and ms_store >= 0:
+                            global_params.TREE[stored_address].append(ms_store_num)
+                    elif ms_key >= 0:
+                        global_params.TREE[stored_address].append(ms_owner_num)
 
         else:
             raise ValueError('STACK underflow')
@@ -2609,6 +2572,17 @@ def detect_vulnerabilities():
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
         detect_reentrancy()
+        if len(global_params.TAINT) != 0:
+           for item in global_params.TARGET:
+               if len(global_params.TREE[item]) !=0 :
+                    results = dfs_target(item,global_params.TARGET_DEPTH,global_params.MODIFIER_DEPTH)
+                    if results:
+                        log.info("taint happen in")
+                        log.info(global_params.globals_state["Ia"][item])
+
+               else:
+                   log.info("Taint happen in ")
+
 
         if global_params.CHECK_ASSERTIONS:
             if g_src_map:
@@ -2630,6 +2604,43 @@ def detect_vulnerabilities():
         results["evm_code_coverage"] = "0/0"
 
     return results, vulnerability_found()
+def dfs_target(item,target_time,owner_time):
+    if target_time == 0:
+        return 0
+    for node in global_params.TREE[item]:
+
+        if node in global_params.TAINT:
+            return 1
+        elif node in global_params.MODIFIER:
+            result = dfs_modfier(node, owner_time)
+            if result:
+                return 2
+        else:
+            result = dfs_target(node,target_time-1,owner_time)
+            if result != 0:
+                return result
+    return 0
+
+
+
+def dfs_modfier(node, ownertime):
+    if ownertime == 0:
+        # target_time = global_params.MODIFIER_DEPTH
+        return False
+    for item in global_params.TREE[node]:
+
+        if item in global_params.TAINT:
+            return True
+        elif item in global_params.MODIFIER:
+            result = dfs_modfier(item, ownertime)
+            if result:
+                return True
+        else:
+            result_target = dfs_target(item, ownertime-1,global_params.MODIFIER_DEPTH)
+            if result_target:
+                return True
+    return False
+
 
 def log_info():
     global g_src_map

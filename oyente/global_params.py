@@ -1,3 +1,17 @@
+from __future__ import unicode_literals
+
+import sys
+
+import os
+
+try:
+    from StringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+import unittest
+from treelib import Tree, Node
+from treelib.tree import NodeIDAbsentError, LoopError
+
 # enable reporting of the result
 REPORT_MODE = 0
 
@@ -60,3 +74,17 @@ VAR_STATE_GLOBAL = {}
 SSTORE_STACK = {}
 
 PATH_CONDITION = {}
+
+TARGET_DEPTH = 3
+
+MODIFIER_DEPTH = 3
+
+TARGET = []
+
+MODIFIER = []
+
+TAINT = []
+# The relation of Global params
+TREE = {}
+
+globals_state = {}

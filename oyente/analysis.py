@@ -105,65 +105,37 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     ms_owner_num = int(ms_owner_key[1])
                 except:
                     ms_owner_num = ms_owner_key[1]
-                if ms_owner_num in global_params.PATH_CONDITION:
-                    if global_params.PATH_CONDITION[ms_owner_num] == 0:
-                        log.info("Onlyowner not worked")
-                        if taint_recipient:
-                            log.info("taint_target")
-                    # else:
-                    #     log.info("Onlyowner worked")
+                if ms_owner_num in global_params.TREE:
+                    if not (ms_owner_num in global_params.MODIFIER):
+                        global_params.MODIFIER.append(ms_owner_num)
                 else:
-                    global_params.PATH_CONDITION[ms_owner_num] = 1
-                    if taint_recipient:
-                        log.info("taint_target if onlyower not worked")
-        elif target_recipient:
-            log.info(target_recipient)
-            if taint_transfer_amount:
-                log.info(target_transfer_amount)
-        if not taint_recipient:
-            result = []
+                    global_params.TREE[ms_owner_num] = []
+                    global_params.MODIFIER.append(ms_owner_num)
+        if taint_recipient:
+            global_params.TREE[stack[1]] = []
+            if ms_owner >= 0:
+                global_params.TREE[stack[1]].append(ms_owner_num)
+            elif ms_condition == "" :
+                global_params.TARGET.append(stack[1])
+
+        else:
+
             for single in stack:
                 res = str(single).find("Ia_store")
                 if res >= 0:
-                    res1 = str(single).split('-')
-                    result.append(res1[1])
-            if len(result) != 0:
-                for var_address in result:
+                    result = str(single).split('-')
                     try:
-                        var_address = int(var_address)
+                        res1 = int(result[1])
                     except:
-                        var_address = var_address
-                    if var_address in global_params.VAR_STATE_GLOBAL:
-                        if global_params.VAR_STATE_GLOBAL[var_address] == 2:
-                                # log.info("taint_happen in:")
-                                # log.info(global_state["Ia"][var_address])
-                            if var_address in global_params.SSTORE_STACK:
-                                    # log.info("recipent success")
-                                for condition in global_params.SSTORE_STACK[var_address]:
-                                        #   log.info("recipient success")
-                                    owner_path_condition.append(condition)
-                                    solver_owner.add(condition)
-                                result = not (solver_owner.check == unsat)
-                                if result:
-                                    log.info("taint_happen in:")
-                                    log.info(global_state["Ia"][var_address])
-                                    log.info("path_condition is satisfied")
+                        res1 = result[1]
+                        # result.append(res1[1])
+                    if not (res1 in global_params.TREE):
+                        global_params.TREE[res1] = []
+                    if not (res1 in global_params.TARGET):
+                        global_params.TARGET.append(res1[1])
+                    if ms_owner >= 0:
+                            global_params.TREE[res1].append(ms_owner_num)
 
-                    else:
-                            # log.info(var_address)
-                        global_params.VAR_STATE_GLOBAL[var_address] = 1
-
-                            # log.info(global_params.VAR_STATE_GLOBAL[int(var_address)])
-                        log.info("wait")
-                        if not (var_address in global_params.SSTORE_STACK):
-                            global_params.SSTORE_STACK[var_address] = []
-                        global_params.SSTORE_STACK[var_address].append(path_conditions_and_vars["path_condition"])
-                    # log.info(path_conditions_and_vars["path_condition"])
-                    #  if not (var_address in global_params.PATH_CONDITION):
-                    #      global_params.PATH_CONDITION[var_address] = 3
-
-        else:
-            log.info("it does not matter")
     return ret_val
 
 def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
