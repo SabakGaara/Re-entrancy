@@ -13,9 +13,6 @@ import logging
 import six
 from collections import namedtuple
 from z3 import *
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 from vargenerator import *
 from ethereum_data import *
 from basicblock import BasicBlock
@@ -569,7 +566,6 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     mem = params.mem
     memory = params.memory
     global_state = params.global_state
-    global_params.globals_state = global_state
     sha3_list = params.sha3_list
     path_conditions_and_vars = params.path_conditions_and_vars
     analysis = params.analysis
@@ -885,8 +881,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if not isAllReal(first, second):
                     solver.push()
                     solver.add(UGT(second, first))
-                    if check_sat(solver) == sat:
-                        global_problematic_pcs['integer_underflow'].append(Underflow(global_state['pc'] - 1, solver.model()))
+                    #if check_sat(solver) == sat:
+                     #   global_problematic_pcs['integer_underflow'].append(Underflow(global_state['pc'] - 1, solver.model()))
                     solver.pop()
 
             stack.insert(0, computed)
@@ -1899,10 +1895,10 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
             # The solvtion of key
-            key_value = stack[0]
-            ms_key = key_value.find("Ia_store")
-            if ms_key >= 0:
-                ms_owner_key = ms_key.split('-')
+            key_value = str(stack[0])
+            if key_value.find("Ia_store") >= 0:
+                ms_key = key_value   
+                ms_owner_key = key_value.split('-')
                 try:
                     ms_owner_num = int(ms_owner_key[1])
                 except:
@@ -2588,22 +2584,27 @@ def detect_vulnerabilities():
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
         detect_reentrancy()
+        #log.info("i am here")
         if len(global_params.TAINT) != 0:
+            #log.info("I am in")
             for item in global_params.TARGET:
+                flag = False
                 if len(global_params.TREE[item]) !=0 :
                     results = dfs_target(item,global_params.TARGET_DEPTH,global_params.MODIFIER_DEPTH)
                     if results == 2:
                         log.info("taint happen in")
-                        log.info(global_params.globals_state["Ia"][item])
+                        flag = True
                         log.info("onlyowner not work")
                     elif results == 1:
                         log.info("taint happen in")
-                        log.info(global_params.globals_state["Ia"][item])
+                        flag = True
                         log.info("Target taint transfer")
                 else:
                     log.info("Taint happen in ")
-                    if item in global_params.globals_state["Ia"]:
-                        log.info(global_params.globals_state["Ia"][item])
+                    flag = True
+                if flag:
+                    if item in global_params.globals_state['Ia']:
+                        log.info(global_params.globals_state['Ia'][item])
                     else:
                         log.info(item)
 
@@ -2632,10 +2633,10 @@ def dfs_target(item,target_time,owner_time):
     if target_time == 0:
         return 0
     for node in global_params.TREE[item]:
-
+        
         if node in global_params.TAINT:
             return 1
-        elif node in global_params.MODIFIER:
+        elif node in global_params.MODIFIER[item]:
             result = dfs_modfier(node, owner_time)
             if result:
                 return 2
