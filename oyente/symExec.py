@@ -1935,12 +1935,14 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             ms_store_num = int(ms_store_key[1])
                         except:
                             ms_store_num = ms_store_key[1]
-                        if ms_store_num in global_params.TREE:
-                            if not (ms_store_num in global_params.MODIFIER):
-                                global_params.MODIFIER.append(ms_store_num)
-                        else:
-                            global_params.TREE[ms_owner_num] = []
-                            global_params.MODIFIER.append(ms_owner_num)
+                        if not (ms_store_num in global_params.TREE):
+                            global_params.TREE[ms_store_num] = []
+                        # if ms_store_num in global_params.TREE:
+                        #     if not (ms_store_num in global_params.MODIFIER):
+                        #         global_params.MODIFIER.append(ms_store_num)
+                        # else:
+                        #     global_params.TREE[ms_store_num] = []
+                        #     global_params.MODIFIER.append(ms_store_num)
                 if taint_stored_value == 1:
                     # if stored_address in var_state :
                     if not flag:
@@ -1948,7 +1950,21 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             global_params.TAINT.append(stored_address)
                     if flag and ms_store >= 0:
                         global_params.TREE[stored_address].append(ms_store_num)
+                        if not (stored_address in global_params.MODIFIER):
+                            global_params.MODIFIER[stored_address] = []
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+                        else:
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+
                 elif ms_key >= 0:
+                    if flag and ms_store >= 0:
+                        global_params.TREE[stored_address].append(ms_store_num)
+                        if not (stored_address in global_params.MODIFIER):
+                            global_params.MODIFIER[stored_address] = []
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+                        else:
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+
                     global_params.TREE[stored_address].append(ms_owner_num)
             else:
                     # note that the stored_value could be unknown
@@ -2573,15 +2589,23 @@ def detect_vulnerabilities():
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
         detect_reentrancy()
         if len(global_params.TAINT) != 0:
-           for item in global_params.TARGET:
-               if len(global_params.TREE[item]) !=0 :
+            for item in global_params.TARGET:
+                if len(global_params.TREE[item]) !=0 :
                     results = dfs_target(item,global_params.TARGET_DEPTH,global_params.MODIFIER_DEPTH)
-                    if results:
+                    if results == 2:
                         log.info("taint happen in")
                         log.info(global_params.globals_state["Ia"][item])
-
-               else:
-                   log.info("Taint happen in ")
+                        log.info("onlyowner not work")
+                    elif results == 1:
+                        log.info("taint happen in")
+                        log.info(global_params.globals_state["Ia"][item])
+                        log.info("Target taint transfer")
+                else:
+                    log.info("Taint happen in ")
+                    if item in global_params.globals_state["Ia"]:
+                        log.info(global_params.globals_state["Ia"][item])
+                    else:
+                        log.info(item)
 
 
         if global_params.CHECK_ASSERTIONS:
@@ -2631,7 +2655,7 @@ def dfs_modfier(node, ownertime):
 
         if item in global_params.TAINT:
             return True
-        elif item in global_params.MODIFIER:
+        elif item in global_params.MODIFIER[node]:
             result = dfs_modfier(item, ownertime)
             if result:
                 return True

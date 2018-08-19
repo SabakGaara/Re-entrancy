@@ -105,16 +105,17 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     ms_owner_num = int(ms_owner_key[1])
                 except:
                     ms_owner_num = ms_owner_key[1]
-                if ms_owner_num in global_params.TREE:
-                    if not (ms_owner_num in global_params.MODIFIER):
-                        global_params.MODIFIER.append(ms_owner_num)
-                else:
+                if not (ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
-                    global_params.MODIFIER.append(ms_owner_num)
         if taint_recipient:
             global_params.TREE[stack[1]] = []
             if ms_owner >= 0:
                 global_params.TREE[stack[1]].append(ms_owner_num)
+                if not (stack[1] in global_params.MODIFIER):
+                    global_params.MODIFIER[stack[1]] = []
+                    global_params.MODIFIER[stack[1]].append(ms_owner_num)
+                else:
+                    global_params.MODIFIER[stack[1]].append(ms_owner_num)
             elif ms_condition == "" :
                 global_params.TARGET.append(stack[1])
 
@@ -132,9 +133,14 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     if not (res1 in global_params.TREE):
                         global_params.TREE[res1] = []
                     if not (res1 in global_params.TARGET):
-                        global_params.TARGET.append(res1[1])
+                        global_params.TARGET.append(res1)
                     if ms_owner >= 0:
-                            global_params.TREE[res1].append(ms_owner_num)
+                        if not (res1 in global_params.MODIFIER):
+                            global_params.MODIFIER[res1] = []
+                            global_params.MODIFIER[res1].append(ms_owner_num)
+                        else:
+                            global_params.MODIFIER[res1].append(ms_owner_num)
+        global_params.globals_state = global_state
 
     return ret_val
 

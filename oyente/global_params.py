@@ -81,7 +81,7 @@ MODIFIER_DEPTH = 3
 
 TARGET = []
 
-MODIFIER = []
+MODIFIER = {}
 
 TAINT = []
 # The relation of Global params
