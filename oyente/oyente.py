@@ -122,6 +122,7 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument("-s",  "--source",    type=str, help="local source file name. Solidity by default. Use -b to process evm instead. Use stdin to read from stdin.")
+
     group.add_argument("-ru", "--remoteURL", type=str, help="Get contract from remote URL. Solidity by default. Use -b to process evm instead.", dest="remote_URL")
 
     parser.add_argument("--version", action="version", version="oyente version 0.2.7 - Commonwealth")
@@ -134,7 +135,8 @@ def main():
     parser.add_argument("-dl",  "--depthlimit",     help="Limit DFS depth", action="store", dest="depth_limit", type=int)
     parser.add_argument("-ap",  "--allow-paths",    help="Allow a given path for imports", action="store", dest="allow_paths", type=str)
     parser.add_argument("-glt", "--global-timeout", help="Timeout for symbolic execution", action="store", dest="global_timeout", type=int)
-
+    parser.add_argument("-td", "--targetDepth" ,    help= "The detect depth of target",action="store", dest="target_depth", type=int)
+    parser.add_argument("-md", "--modifierDepth",   help = "The detect depth of modifier",action="store", dest="modifier_depth", type=int)
     parser.add_argument( "-e",   "--evm",                    help="Do not remove the .evm file.", action="store_true")
     parser.add_argument( "-w",   "--web",                    help="Run Oyente for web service", action="store_true")
     parser.add_argument( "-j",   "--json",                   help="Redirect results to a json file.", action="store_true")
@@ -196,7 +198,10 @@ def main():
 
     if not has_dependencies_installed():
         return
-
+    if args.target_depth:
+        global_params.TARGET_DEPTH = args.target_depth
+    if args.modifier_depth:
+        global_params.MODIFIER_DEPTH = args.modifier_depth
     if args.remote_URL:
         r = requests.get(args.remote_URL)
         code = r.text

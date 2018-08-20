@@ -1897,7 +1897,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             # The solvtion of key
             key_value = str(stack[0])
             if key_value.find("Ia_store") >= 0:
-                ms_key = key_value   
+                ms_key = key_value
                 ms_owner_key = key_value.split('-')
                 try:
                     ms_owner_num = int(ms_owner_key[1])
@@ -1926,7 +1926,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if flag:
                     ms_store = pc_key.find("Ia_store")
                     if ms_store >= 0:
-                        ms_store_key = ms_store.split('-')
+                        ms_store_key = pc_key.split('-')
                         try:
                             ms_store_num = int(ms_store_key[1])
                         except:
@@ -1952,7 +1952,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                         else:
                             global_params.MODIFIER[stored_address].append(ms_store_num)
 
-                elif ms_key >= 0:
+                elif key_value.find("Ia_store") >= 0:
                     if flag and ms_store >= 0:
                         global_params.TREE[stored_address].append(ms_store_num)
                         if not (stored_address in global_params.MODIFIER):
@@ -1994,7 +1994,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                                 global_params.TAINT.append(stored_address)
                         if flag and ms_store >= 0:
                             global_params.TREE[stored_address].append(ms_store_num)
-                    elif ms_key >= 0:
+                    elif key_value.find("Ia_store") >= 0:
                         global_params.TREE[stored_address].append(ms_owner_num)
 
         else:
