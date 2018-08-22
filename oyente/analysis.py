@@ -104,7 +104,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 try:
                     ms_owner_num = int(ms_owner_key[1])
                 except:
-                    ms_owner_num = ms_owner_key[1]
+                    ms_owner_num = str(ms_owner_key[1])
                 if not (ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
         if taint_recipient:
@@ -130,7 +130,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     try:
                         res1 = int(result[1])
                     except:
-                        res1 = result[1]
+                        res1 = str(result[1])
                         # result.append(res1[1])
                     if not (res1 in global_params.TREE):
                         global_params.TREE[res1] = []

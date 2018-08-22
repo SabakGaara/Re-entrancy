@@ -1902,7 +1902,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 try:
                     ms_owner_num = int(ms_owner_key[1])
                 except:
-                    ms_owner_num = ms_owner_key[1]
+                    ms_owner_num = str(ms_owner_key[1])
                 if not(ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
 
@@ -1911,7 +1911,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 try:
                     stored_address = int(stored_address)
                 except:
-                    stored_address = stored_address
+                    stored_address = str(stored_address)
 
                 global_state["Ia"][stored_address] = stored_value
                 if not(stored_address in global_params.TREE):
@@ -1930,7 +1930,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                         try:
                             ms_store_num = int(ms_store_key[1])
                         except:
-                            ms_store_num = ms_store_key[1]
+                            ms_store_num = str(ms_store_key[1])
                         if not (ms_store_num in global_params.TREE):
                             global_params.TREE[ms_store_num] = []
                         # if ms_store_num in global_params.TREE:
@@ -1980,7 +1980,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                             try:
                                 ms_store_num = int(ms_store_key[1])
                             except:
-                                ms_store_num = ms_store_key[1]
+                                ms_store_num = str(ms_store_key[1])
                             if ms_store_num in global_params.TREE:
                                 if not (ms_store_num in global_params.MODIFIER):
                                     global_params.MODIFIER.append(ms_store_num)
@@ -2589,7 +2589,7 @@ def detect_vulnerabilities():
             #log.info("I am in")
             for item in global_params.TARGET:
                 flag = False
-                if len(global_params.TREE[item]) !=0 :
+                if len(global_params.TREE[item]) != 0 :
                     results = dfs_target(item,global_params.TARGET_DEPTH,global_params.MODIFIER_DEPTH)
                     if results == 2:
                         log.info("taint happen in")
@@ -2599,7 +2599,7 @@ def detect_vulnerabilities():
                         log.info("taint happen in")
                         flag = True
                         log.info("Target taint transfer")
-                else:
+                elif item in global_params.TAINT:
                     log.info("Taint happen in ")
                     flag = True
                 if flag:
