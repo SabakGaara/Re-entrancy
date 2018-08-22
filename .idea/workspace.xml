@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="12dcc986-4c0f-49eb-aa4b-21f495e6bc09" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/oyente/analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/oyente/analysis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/oyente/symExec.py" beforeDir="false" afterPath="$PROJECT_DIR$/oyente/symExec.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -51,11 +49,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="symExec.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="symExec.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/oyente/symExec.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="326">
-              <caret line="2601" column="39" lean-forward="true" selection-start-line="2601" selection-start-column="39" selection-end-line="2601" selection-end-column="39" />
+            <state relative-caret-position="155">
+              <caret line="1966" column="16" lean-forward="true" selection-start-line="1966" selection-start-column="16" selection-end-line="1966" selection-end-column="16" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -89,11 +87,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="analysis.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="analysis.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/oyente/analysis.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="251">
-              <caret line="106" column="55" selection-start-line="106" selection-start-column="55" selection-end-line="106" selection-end-column="55" />
+            <state relative-caret-position="783">
+              <caret line="143" column="63" selection-start-line="143" selection-start-column="57" selection-end-line="143" selection-end-column="63" />
               <folding>
                 <element signature="e#0#14#0" expanded="true" />
               </folding>
@@ -115,8 +113,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/oyente/symExec.py" />
         <option value="$PROJECT_DIR$/oyente/analysis.py" />
+        <option value="$PROJECT_DIR$/oyente/symExec.py" />
       </list>
     </option>
   </component>
@@ -295,16 +293,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/oyente/symExec.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="326">
-          <caret line="2601" column="39" lean-forward="true" selection-start-line="2601" selection-start-column="39" selection-end-line="2601" selection-end-column="39" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/oyente/oyente.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2005">
@@ -314,10 +302,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/oyente/analysis.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="251">
-          <caret line="106" column="55" selection-start-line="106" selection-start-column="55" selection-end-line="106" selection-end-column="55" />
+        <state relative-caret-position="783">
+          <caret line="143" column="63" selection-start-line="143" selection-start-column="57" selection-end-line="143" selection-end-column="63" />
           <folding>
             <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/oyente/symExec.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="155">
+          <caret line="1966" column="16" lean-forward="true" selection-start-line="1966" selection-start-column="16" selection-end-line="1966" selection-end-column="16" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
           </folding>
         </state>
       </provider>

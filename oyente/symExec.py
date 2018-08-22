@@ -1963,40 +1963,60 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
 
                     global_params.TREE[stored_address].append(ms_owner_num)
             else:
-                    # note that the stored_value could be unknown
-                    if not (stored_address in global_params.TREE):
-                        global_params.TREE[stored_address] = []
+                try:
+                    stored_address = int(stored_address)
+                except:
+                    stored_address = str(stored_address)
 
-                    flag = False
-                    for condition in path_condition_sstore:
-                        if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                            flag = True
-                            pc_key = condition
-                            break
-                    if flag:
-                        ms_store = pc_key.find("Ia_store")
-                        if ms_store >= 0:
-                            ms_store_key = ms_store.split('-')
-                            try:
-                                ms_store_num = int(ms_store_key[1])
-                            except:
-                                ms_store_num = str(ms_store_key[1])
-                            if ms_store_num in global_params.TREE:
-                                if not (ms_store_num in global_params.MODIFIER):
-                                    global_params.MODIFIER.append(ms_store_num)
-                            else:
-                                global_params.TREE[ms_owner_num] = []
-                                global_params.MODIFIER.append(ms_owner_num)
-                    if taint_stored_value == 1:
-                        # if stored_address in var_state :
-                        if not flag:
-                            if not (stored_address in global_params.TAINT):
-                                global_params.TAINT.append(stored_address)
-                        if flag and ms_store >= 0:
-                            global_params.TREE[stored_address].append(ms_store_num)
-                    elif key_value.find("Ia_store") >= 0:
-                        global_params.TREE[stored_address].append(ms_owner_num)
+                global_state["Ia"][stored_address] = stored_value
+                if not (stored_address in global_params.TREE):
+                    global_params.TREE[stored_address] = []
 
+                flag = False
+                for condition in path_condition_sstore:
+                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                        flag = True
+                        pc_key = condition
+                        break
+                if flag:
+                    ms_store = pc_key.find("Ia_store")
+                    if ms_store >= 0:
+                        ms_store_key = pc_key.split('-')
+                        try:
+                            ms_store_num = int(ms_store_key[1])
+                        except:
+                            ms_store_num = str(ms_store_key[1])
+                        if not (ms_store_num in global_params.TREE):
+                            global_params.TREE[ms_store_num] = []
+                        # if ms_store_num in global_params.TREE:
+                        #     if not (ms_store_num in global_params.MODIFIER):
+                        #         global_params.MODIFIER.append(ms_store_num)
+                        # else:
+                        #     global_params.TREE[ms_store_num] = []
+                        #     global_params.MODIFIER.append(ms_store_num)
+                if taint_stored_value == 1:
+                    # if stored_address in var_state :
+                    if not flag:
+                        if not (stored_address in global_params.TAINT):
+                            global_params.TAINT.append(stored_address)
+                    if flag and ms_store >= 0:
+                        global_params.TREE[stored_address].append(ms_store_num)
+                        if not (stored_address in global_params.MODIFIER):
+                            global_params.MODIFIER[stored_address] = []
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+                        else:
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+
+                elif key_value.find("Ia_store") >= 0:
+                    if flag and ms_store >= 0:
+                        global_params.TREE[stored_address].append(ms_store_num)
+                        if not (stored_address in global_params.MODIFIER):
+                            global_params.MODIFIER[stored_address] = []
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+                        else:
+                            global_params.MODIFIER[stored_address].append(ms_store_num)
+
+                    global_params.TREE[stored_address].append(ms_owner_num)
         else:
             raise ValueError('STACK underflow')
     elif opcode == "JUMP":
