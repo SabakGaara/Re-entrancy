@@ -783,7 +783,8 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     # since SE will modify the stack and mem
     update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack)
     if opcode == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
-        global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
+        log.info(global_params.TARGET_PC)
+
 
     log.debug("==============================")
     log.debug("EXECUTING: " + instr)
@@ -2524,15 +2525,44 @@ def detect_reentrancy():
     global g_src_map
     global results
     global reentrancy
+    check = False
+    if len(global_params.TAINT) != 0:
+        # log.info("I am in")
+        for item in global_params.TARGET:
+            flag = False
+            if len(global_params.TREE[item]) != 0:
+                results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
+                if results == 2:
+                    log.info("taint happen in")
+                    flag = True
+                    log.info("onlyowner not work")
+                elif results == 1:
+                    log.info("taint happen in")
+                    flag = True
+                    log.info("Target taint transfer")
+            elif item in global_params.TAINT:
+                log.info("Taint happen in ")
+                flag = True
+            if flag:
+                check = True
+                for single in global_params.TARGET_PC[item]:
+                    global_problematic_pcs["reentrancy_bug"].append(single)
+                    my_re = Reentrancy(g_src_map, single)
+                    log_info_re(my_re)
+                if item in global_params.globals_state['Ia']:
+                    log.info(global_params.globals_state['Ia'][item])
+                else:
+                    log.info(item)
 
     pcs = global_problematic_pcs["reentrancy_bug"]
+
     reentrancy = Reentrancy(g_src_map, pcs)
 
     if g_src_map:
         results['vulnerabilities']['reentrancy'] = reentrancy.get_warnings()
     else:
-        results['vulnerabilities']['reentrancy'] = reentrancy.is_vulnerable()
-    log.info("\t  Re-Entrancy Vulnerability: \t\t %s", reentrancy.is_vulnerable())
+        results['vulnerabilities']['reentrancy'] = check
+    log.info("\t  Re-Entrancy Vulnerability: \t\t %s", check)
 
 def detect_integer_underflow():
     global integer_underflow
@@ -2604,29 +2634,6 @@ def detect_vulnerabilities():
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
         detect_reentrancy()
-        #log.info("i am here")
-        if len(global_params.TAINT) != 0:
-            #log.info("I am in")
-            for item in global_params.TARGET:
-                flag = False
-                if len(global_params.TREE[item]) != 0 :
-                    results = dfs_target(item,global_params.TARGET_DEPTH,global_params.MODIFIER_DEPTH)
-                    if results == 2:
-                        log.info("taint happen in")
-                        flag = True
-                        log.info("onlyowner not work")
-                    elif results == 1:
-                        log.info("taint happen in")
-                        flag = True
-                        log.info("Target taint transfer")
-                elif item in global_params.TAINT:
-                    log.info("Taint happen in ")
-                    flag = True
-                if flag:
-                    if item in global_params.globals_state['Ia']:
-                        log.info(global_params.globals_state['Ia'][item])
-                    else:
-                        log.info(item)
 
 
         if global_params.CHECK_ASSERTIONS:
@@ -2686,7 +2693,17 @@ def dfs_modfier(node, ownertime):
                 return True
     return False
 
+def log_info_re(my_re):
+    global g_src_map
 
+    vulnerabilities = [my_re]
+    if g_src_map:
+        vulnerabilities.append(parity_multisig_bug_2)
+
+    for vul in vulnerabilities:
+        s = str(vul)
+        if s:
+            log.info(s)
 def log_info():
     global g_src_map
     global time_dependency

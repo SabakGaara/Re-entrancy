@@ -107,9 +107,13 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     ms_owner_num = str(ms_owner_key[1])
                 if not (ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
+
         if taint_recipient:
             target = str(stack[1])
             global_params.TREE[target] = []
+            global_params.TARGET_PC[target] = []
+            global_params.TARGET_PC[target].append(global_state["pc"])
+
             global_params.TARGET.append(target)
             if ms_condition!= "":
                 global_params.TREE[target].append(ms_owner_num)
@@ -134,8 +138,13 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                         # result.append(res1[1])
                     if not (res1 in global_params.TREE):
                         global_params.TREE[res1] = []
+
                     if not (res1 in global_params.TARGET):
                         global_params.TARGET.append(res1)
+                        global_params.TARGET_PC[res1] = []
+                        global_params.TARGET_PC[res1].append(global_state["pc"])
+                    else:
+                        global_params.TARGET_PC[res1].append(global_state["pc"])
                     if ms_condition != "":
                         if not (res1 in global_params.MODIFIER):
                             global_params.MODIFIER[res1] = []
@@ -259,7 +268,7 @@ def update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_
         analysis["reentrancy_bug"].append(reentrancy_result)
 
         analysis["money_concurrency_bug"].append(global_state["pc"])
-        analysis["money_flow"].append( ("Ia", str(recipient), str(transfer_amount)))
+        analysis["money_flow"].append(("Ia", str(recipient), str(transfer_amount)))
     elif opcode == "SUICIDE":
         recipient = stack[0]
         if isSymbolic(recipient):

@@ -88,3 +88,5 @@ TAINT = []
 TREE = {}
 
 globals_state = {}
+
+TARGET_PC = {}
