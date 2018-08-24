@@ -1,18 +1,4 @@
-from __future__ import unicode_literals
 
-import sys
-
-import os
-
-try:
-    from StringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-import unittest
-from treelib import Tree, Node
-from treelib.tree import NodeIDAbsentError, LoopError
-
-# enable reporting of the result
 REPORT_MODE = 0
 
 #print everything in the console
