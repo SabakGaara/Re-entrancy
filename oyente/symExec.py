@@ -783,7 +783,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
     # since SE will modify the stack and mem
     update_analysis(analysis, opcode, stack, mem, global_state, path_conditions_and_vars, solver,taint_stack)
     if opcode == "CALL" and analysis["reentrancy_bug"] and analysis["reentrancy_bug"][-1]:
-        log.info(global_params.TARGET_PC)
+        global_problematic_pcs["reentrancy_bug"].append(global_state["pc"])
 
 
     log.debug("==============================")
@@ -2525,34 +2525,7 @@ def detect_reentrancy():
     global g_src_map
     global results
     global reentrancy
-    check = False
-    if len(global_params.TAINT) != 0:
-        # log.info("I am in")
-        for item in global_params.TARGET:
-            flag = False
-            if len(global_params.TREE[item]) != 0:
-                results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
-                if results == 2:
-                    log.info("taint happen in")
-                    flag = True
-                    log.info("onlyowner not work")
-                elif results == 1:
-                    log.info("taint happen in")
-                    flag = True
-                    log.info("Target taint transfer")
-            elif item in global_params.TAINT:
-                log.info("Taint happen in ")
-                flag = True
-            if flag:
-                check = True
-                for single in global_params.TARGET_PC[item]:
-                    global_problematic_pcs["reentrancy_bug"].append(single)
-                    my_re = Reentrancy(g_src_map, single)
-                    log_info_re(my_re)
-                if item in global_params.globals_state['Ia']:
-                    log.info(global_params.globals_state['Ia'][item])
-                else:
-                    log.info(item)
+
 
     pcs = global_problematic_pcs["reentrancy_bug"]
 
@@ -2634,7 +2607,34 @@ def detect_vulnerabilities():
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
         detect_reentrancy()
-
+        check = False
+        if len(global_params.TAINT) != 0:
+            # log.info("I am in")
+            for item in global_params.TARGET:
+                flag = False
+                if len(global_params.TREE[item]) != 0:
+                    results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
+                    if results == 2:
+                        log.info("taint happen in")
+                        flag = True
+                        log.info("onlyowner not work")
+                    elif results == 1:
+                        log.info("taint happen in")
+                        flag = True
+                        log.info("Target taint transfer")
+                elif item in global_params.TAINT:
+                    log.info("Taint happen in ")
+                    flag = True
+                if flag:
+                    check = True
+                    for single in global_params.TARGET_PC[item]:
+                        #global_problematic_pcs["reentrancy_bug"].append(single)
+                        my_re = Reentrancy(g_src_map, single)
+                        log_info_re(my_re)
+                    if item in global_params.globals_state['Ia']:
+                        log.info(global_params.globals_state['Ia'][item])
+                    else:
+                        log.info(item)
 
         if global_params.CHECK_ASSERTIONS:
             if g_src_map:
@@ -2845,6 +2845,7 @@ def run(disasm_file=None, source_file=None, source_map=None):
         begin = time.time()
         log.info("\t============ Results ===========")
         analyze()
+
         ret = detect_vulnerabilities()
         closing_message()
         return ret
