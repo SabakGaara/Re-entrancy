@@ -2606,12 +2606,10 @@ def detect_vulnerabilities():
             rfile.close()
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
-        detect_reentrancy()
-        check = False
+        #detect_reentrancy()
         if len(global_params.TAINT) != 0:
-            # log.info("I am in")
             for item in global_params.TARGET:
-                flag = False
+                flag =False
                 if len(global_params.TREE[item]) != 0:
                     results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
                     if results == 2:
@@ -2626,11 +2624,15 @@ def detect_vulnerabilities():
                     log.info("Taint happen in ")
                     flag = True
                 if flag:
-                    check = True
                     for single in global_params.TARGET_PC[item]:
+                        
+                        
                         #global_problematic_pcs["reentrancy_bug"].append(single)
-                        my_re = Reentrancy(g_src_map, single)
-                        log_info_re(my_re)
+                        log.info("Reentrancy bug happen in line:")
+                        log.info(g_src_map.get_location(single-1)['begin']['line'])
+                        
+                        code = g_src_map.get_source_code(single - 1)
+                        log.info(code)
                     if item in global_params.globals_state['Ia']:
                         log.info(global_params.globals_state['Ia'][item])
                     else:
@@ -2709,11 +2711,10 @@ def log_info():
     global time_dependency
     global callstack
     global money_concurrency
-    global reentrancy
     global assertion_failure
     global parity_multisig_bug_2
 
-    vulnerabilities = [integer_underflow, integer_overflow, callstack, money_concurrency, time_dependency, reentrancy]
+    vulnerabilities = [integer_underflow, integer_overflow, callstack, money_concurrency, time_dependency]
     if g_src_map:
         vulnerabilities.append(parity_multisig_bug_2)
         if global_params.CHECK_ASSERTIONS:
@@ -2729,11 +2730,10 @@ def vulnerability_found():
     global time_dependency
     global callstack
     global money_concurrency
-    global reentrancy
     global assertion_failure
     global parity_multisig_bug_2
 
-    vulnerabilities = [callstack, money_concurrency, time_dependency, reentrancy]
+    vulnerabilities = [callstack, money_concurrency, time_dependency]
 
     if g_src_map and global_params.CHECK_ASSERTIONS:
         vulnerabilities.append(assertion_failure)

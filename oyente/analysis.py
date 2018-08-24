@@ -143,7 +143,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                         global_params.TARGET.append(res1)
                         global_params.TARGET_PC[res1] = []
                         global_params.TARGET_PC[res1].append(global_state["pc"])
-                    else:
+                    elif not(global_state["pc"] in global_params.TARGET_PC[res1]):
                         global_params.TARGET_PC[res1].append(global_state["pc"])
                     if ms_condition != "":
                         if not (res1 in global_params.MODIFIER):
