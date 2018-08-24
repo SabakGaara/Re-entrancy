@@ -2534,8 +2534,8 @@ def detect_reentrancy():
     if g_src_map:
         results['vulnerabilities']['reentrancy'] = reentrancy.get_warnings()
     else:
-        results['vulnerabilities']['reentrancy'] = check
-    log.info("\t  Re-Entrancy Vulnerability: \t\t %s", check)
+        results['vulnerabilities']['reentrancy'] = reentrancy.is_vulnerable()
+    log.info("\t  Re-Entrancy Vulnerability: \t\t %s", reentrancy.is_vulnerable())
 
 def detect_integer_underflow():
     global integer_underflow
