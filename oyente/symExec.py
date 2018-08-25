@@ -2611,9 +2611,13 @@ def detect_vulnerabilities():
             for item in global_params.TARGET:
                 flag =False
                 if len(global_params.TREE[item]) != 0:
+                        
                     results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
                     if results == 2:
-                        log.info("taint happen in")
+                        if (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.MODIFIER[item]):
+                            log.info("taint direct happen in")                           
+                        else:
+                            log.info("taint happen in")
                         flag = True
                         log.info("onlyowner not work")
                     elif results == 1:
@@ -2621,7 +2625,7 @@ def detect_vulnerabilities():
                         flag = True
                         log.info("Target taint transfer")
                 elif item in global_params.TAINT:
-                    log.info("Taint happen in ")
+                    log.info("taint target direct happen in ")
                     flag = True
                 if flag:
                     for single in global_params.TARGET_PC[item]:
@@ -2637,6 +2641,14 @@ def detect_vulnerabilities():
                         log.info(global_params.globals_state['Ia'][item])
                     else:
                         log.info(item)
+                else:
+                    for single in global_params.TARGET_PC[item]:
+                        log.info("Target is not taint")
+                        log.info(g_src_map.get_location(single-1)['begin']['line'])
+                        code = g_src_map.get_source_code(single - 1)
+                        log.info(code)
+
+          
 
         if global_params.CHECK_ASSERTIONS:
             if g_src_map:
