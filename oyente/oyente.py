@@ -87,7 +87,6 @@ def run_solidity_analysis(inputs):
         with open(inp['disasm_file'], 'r') as f:
             lines = f.readlines()
             last_line = lines[-1]
-            logging.info(last_line)
             num = num +  int(last_line.split(":")[0])
     logging.info("the total number:")
     logging.info(num)

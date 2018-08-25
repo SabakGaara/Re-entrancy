@@ -2614,23 +2614,26 @@ def detect_vulnerabilities():
                         
                     results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
                     if results == 2:
-                        if (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.MODIFIER[item]):
-                            log.info("taint direct happen in")                           
-                        else:
-                            log.info("taint happen in")
                         flag = True
-                        log.info("onlyowner not work")
                     elif results == 1:
-                        log.info("taint happen in")
                         flag = True
-                        log.info("Target taint transfer")
                 elif item in global_params.TAINT:
-                    log.info("taint target direct happen in ")
                     flag = True
                 if flag:
                     for single in global_params.TARGET_PC[item]:
                         
-                        
+                        if results == 2:
+                            if (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.MODIFIER[item]):
+                                log.info("taint target owner direct happen in")
+                            else:
+                                log.info("taint target owner happen in")
+                            log.info("onlyowner not work")
+                        elif results == 1:
+                            log.info("taint happen in")
+                            log.info("Target taint transfer")
+                        else:
+                            log.info("taint target direct happen in ")
+  
                         #global_problematic_pcs["reentrancy_bug"].append(single)
                         log.info("Reentrancy bug happen in line:")
                         log.info(g_src_map.get_location(single-1)['begin']['line'])
@@ -2648,11 +2651,18 @@ def detect_vulnerabilities():
                         code = g_src_map.get_source_code(single - 1)
                         log.info(code)
 
-          
+        else:
+            for item in global_params.TARGET:
+               
+                for single in global_params.TARGET_PC[item]:
+                    log.info("Target is not taint")
+
+
 
         if global_params.CHECK_ASSERTIONS:
             if g_src_map:
                 detect_assertion_failure()
+
             else:
                 raise Exception("Assertion checks need a Source Map")
 
@@ -2860,4 +2870,10 @@ def run(disasm_file=None, source_file=None, source_map=None):
 
         ret = detect_vulnerabilities()
         closing_message()
+        global_params.TARGET = []
+        global_params.MODIFIER = {}
+        global_params.TAINT = []
+        global_params.TREE ={}
+        global_params.global_state = {}
+        global_params.TARGET_PC = {}
         return ret
