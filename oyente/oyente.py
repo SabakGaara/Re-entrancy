@@ -13,6 +13,8 @@ import global_params
 from utils import run_command
 from input_helper import InputHelper
 
+from memory_profiler import memory_usage
+from time import sleep
 def cmd_exists(cmd):
     return subprocess.call("type " + cmd, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
@@ -122,7 +124,6 @@ def analyze_solidity(input_type='solidity'):
     if global_params.WEB:
         six.print_(json.dumps(results))
     return exit_code
-
 def main():
     # TODO: Implement -o switch.
 
@@ -229,8 +230,11 @@ def main():
         exit_code = analyze_solidity(input_type='standard_json_output')
     else:
         exit_code = analyze_solidity()
-
-    exit(exit_code)
-
+    
+#mem_usage = memory_usage(main)
+#print('Memory usage (in chunks of .1 seconds): %s' % mem_usage)
+#print('Maximum memory usage: %s' % max(mem_usage))
 if __name__ == '__main__':
-    main()
+    #main()
+    mem_usage = memory_usage(main, 0.05)
+    print('Maximum memory usage: %s' % max(mem_usage))
