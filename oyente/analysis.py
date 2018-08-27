@@ -114,9 +114,9 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 global_params.TREE[target] = []
             if not(target in global_params.TARGET):
                 global_params.TARGET.append(target)
- 
-            if not(global_state["pc"] in global_params.TARGET_PC[target])
                 global_params.TARGET_PC[target] = []
+ 
+            if not(global_state["pc"] in global_params.TARGET_PC[target]):
                 global_params.TARGET_PC[target].append(global_state["pc"])
             if ms_condition!= "":
                 global_params.TREE[target].append(ms_owner_num)
