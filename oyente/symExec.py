@@ -2693,7 +2693,7 @@ def dfs_target(item,target_time,owner_time):
         
         if (node in global_params.TAINT) and (node in global_params.MODIFIER[item]):
             return 2
-        elif node in global_params.TAINT:
+        if node in global_params.TAINT:
             return 1
         elif node in global_params.MODIFIER[item]:
             result = dfs_modfier(node, owner_time)
@@ -2716,7 +2716,7 @@ def dfs_modfier(node, ownertime):
         if item in global_params.TAINT:
             return True
         elif item in global_params.MODIFIER[node]:
-            result = dfs_modfier(item, ownertime)
+            result = dfs_modfier(item, ownertime-1)
             if result:
                 return True
         else:
