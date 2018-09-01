@@ -69,6 +69,10 @@ TARGET = []
 
 MODIFIER = {}
 
+D_MODIFIER = {}
+
+D_TAINT =[]
+
 TAINT = []
 # The relation of Global params
 TREE = {}

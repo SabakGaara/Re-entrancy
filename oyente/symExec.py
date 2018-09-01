@@ -1920,12 +1920,12 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
 
                 flag = False
                 for condition in path_condition_sstore:
-                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("Extract(159, 0, Is)") >= 0):
                         flag = True
-                        pc_key = condition
+                        pc_key = str(condition)
                         break
                 if flag:
-                    ms_store = pc_key.find("Ia_store")
+                    ms_store = str(pc_key).find("Ia_store")
                     if ms_store >= 0:
                         ms_store_key = pc_key.split('-')
                         try:
@@ -1977,7 +1977,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 for condition in path_condition_sstore:
                     if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
                         flag = True
-                        pc_key = condition
+                        pc_key = str(condition)
                         break
                 if flag:
                     ms_store = pc_key.find("Ia_store")
@@ -2606,7 +2606,6 @@ def detect_vulnerabilities():
             rfile.close()
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
-        #detect_reentrancy()
         if len(global_params.TAINT) != 0:
             for item in global_params.TARGET:
                 flag =False
@@ -2617,13 +2616,17 @@ def detect_vulnerabilities():
                         flag = True
                     elif results == 1:
                         flag = True
+                elif item in global_params.D_TAINT:
+                    log.info("taint direct happen")
+                    flag = True
                 elif item in global_params.TAINT:
+                    log.info("taint in-direct happen")
                     flag = True
                 if flag:
                     for single in global_params.TARGET_PC[item]:
                         
                         if results == 2:
-                            if (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.MODIFIER[item]):
+                            if (item in global_params.D_MODIFIER) and  (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.D_MODIFIER[item]):
                                 log.info("taint target owner direct happen in")
                             else:
                                 log.info("taint target owner happen in")
@@ -2631,8 +2634,6 @@ def detect_vulnerabilities():
                         elif results == 1:
                             log.info("taint happen in")
                             log.info("Target taint transfer")
-                        else:
-                            log.info("taint target direct happen in ")
   
                         #global_problematic_pcs["reentrancy_bug"].append(single)
                         log.info("Reentrancy bug happen in line:")
@@ -2652,10 +2653,15 @@ def detect_vulnerabilities():
                         log.info(code)
 
         else:
+            log.info(global_params.TARGET)
             for item in global_params.TARGET:
                
                 for single in global_params.TARGET_PC[item]:
                     log.info("Target is not taint")
+                    log.info(g_src_map.get_location(single-1)['begin']['line'])
+                    code = g_src_map.get_source_code(single - 1)
+                    log.info(code)
+
 
 
 
@@ -2685,7 +2691,9 @@ def dfs_target(item,target_time,owner_time):
         return 0
     for node in global_params.TREE[item]:
         
-        if node in global_params.TAINT:
+        if (node in global_params.TAINT) and (node in global_params.MODIFIER[item]):
+            return 2
+        elif node in global_params.TAINT:
             return 1
         elif node in global_params.MODIFIER[item]:
             result = dfs_modfier(node, owner_time)
