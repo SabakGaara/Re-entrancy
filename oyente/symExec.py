@@ -2606,7 +2606,7 @@ def detect_vulnerabilities():
             rfile.close()
 
         log.debug("Results for Reentrancy Bug: " + str(reentrancy_all_paths))
-        if len(global_params.TAINT) != 0:
+        if len(global_params.TAINT) != 0 or len(global_params.D_TAINT)!= 0:
             for item in global_params.TARGET:
                 flag =False
                 if len(global_params.TREE[item]) != 0:
