@@ -122,14 +122,16 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 global_params.TREE[target].append(ms_owner_num)
                 if not (target in global_params.MODIFIER):
                     global_params.MODIFIER[target] = []
+                    global_params.D_MODIFIER[target] = []
                     global_params.MODIFIER[target].append(ms_owner_num)
+                    global_params.D_MODIFIER[target].append(ms_owner_num)
                 else:
                     global_params.MODIFIER[target].append(ms_owner_num)
+                    global_params.D_MODIFIER[target].append(ms_owner_num)
             elif ms_condition == "" :
-                global_params.TAINT.append(target)
+                global_params.D_TAINT.append(target)
 
         else:
-
             for single in stack:
                 res = str(single).find("Ia_store")
                 if res >= 0:

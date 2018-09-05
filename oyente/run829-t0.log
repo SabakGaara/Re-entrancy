@@ -1,0 +1,17 @@
+WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
+WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
+INFO:root:contract /root/Re-entrancy/25.sol:RUSSIA_WINS:
+INFO:root:the total number:
+INFO:root:2894
+INFO:root:contract /root/Re-entrancy/25.sol:RUSSIA_WINS:
+INFO:symExec:	============ Results ===========
+INFO:symExec:	  EVM Code Coverage: 			 99.9%
+INFO:symExec:	  Integer Underflow: 			 False
+INFO:symExec:	  Integer Overflow: 			 False
+INFO:symExec:	  Parity Multisig Bug 2: 		 False
+INFO:symExec:	  Callstack Depth Attack Vulnerability:  False
+INFO:symExec:	  Transaction-Ordering Dependence (TOD): False
+INFO:symExec:	  Timestamp Dependency: 		 False
+INFO:symExec:	  Assertion Failure: 			 False
+INFO:symExec:	====== Analysis Completed ======
+INFO:symExec:Wrote results to /root/Re-entrancy/25.sol:RUSSIA_WINS.json.

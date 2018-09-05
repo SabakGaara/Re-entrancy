@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+  <title>DTTRE</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <link rel="stylesheet" href="assets/css/amazeui.min.css"/>
+  <style>
+    .get {
+      background: url(assets/img/bg-star.jpg);
+      background-size:100%;
+      color: #fff;
+      text-align: center;
+      padding: 50px 0;
+      font-size: x-large;
+    }
+
+    .get-title {
+      font-size: 200%;
+      border: 2px solid #fff;
+      padding: 20px;
+      display: inline-block;
+    }
+
+    .get-btn {
+      background: #fff;
+    }
+
+    .detail {
+      background:  url(assets/img/bg-code.jpg);
+      background-size:100%;
+    }
+
+    .code-editor{
+      background: #fff;
+    }
+
+    .detail-h2 {
+      text-align: center;
+      font-size: 150%;
+      margin: 40px 0;
+    }
+
+    .detail-h3 {
+      color: #1f8dd6;
+    }
+
+    .detail-p {
+      color: #7f8c8d;
+    }
+
+    .detail-mb {
+      margin-bottom: 30px;
+    }
+
+    .hope {
+      padding: 50px 0;
+    }
+
+    .hope-img {
+      text-align: center;
+    }
+
+    .hope-hr {
+      border-color: #149C88;
+    }
+
+    .hope-title {
+      text-align: center;
+      font-size: 140%;
+    }
+
+    .about {
+      background: #fff;
+      padding: 40px 0;
+      color: #7f8c8d;
+    }
+
+    .about-color {
+      color: #34495e;
+    }
+
+    .about-title {
+      font-size: 180%;
+      padding: 30px 0 50px 0;
+      text-align: center;
+    }
+
+    .footer p {
+      color: #7f8c8d;
+      margin: 0;
+      padding: 15px 0;
+      text-align: center;
+      background: #2d3e50;
+    }
+    #editor {
+      margin: 0;
+      display: inline-block;
+      width: 870px;
+      height: 380px;
+    }
+  </style>
+</head>
+<body>
+
+
+
+<div class="get">
+  <div class="am-g">
+    <div class="am-u-lg-12">
+      <h1 class="get-title">DTTRE</h1>
+
+      <p>
+        DTTRE: Detect Taint Transfer in Re-entrancy Bug  
+      </p>
+      <p>
+        <a href="https://github.com/SabakGaara/Re-entrancy" class="am-btn am-btn-default am-round" target="_blank">Github <i class="am-icon-github am-icon-sm"></i></a>
+        &nbsp;&nbsp;
+        <a href="https://youtu.be/J6EKP1crtwI" class="am-btn am-btn-default am-round" target="_blank">Youtube <i class="am-icon-youtube am-icon-sm"></i></a>
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<div class="detail">
+  <div class="am-g">
+    <div class="am-u-lg-12">
+      <div class="am-u-sm-12 am-u-md-12 am-margin" style="text-align: center;">
+        <strong>Select a Contract Example:</strong>
+        <select  onchange=select_sample(this) id="sample_select">
+          <option value="AmIOnTheFork">AmIOnTheFork</option>
+          <option value="URUGUAY_WINS">URUGUAY_WINS</option>
+          <option value="Migrations">Migrations</option>
+          <option value="generic_holder" selected="selected">generic_holder</option>
+          <option value="COIN_BOX">COIN_BOX</option>
+        </select>
+        <strong>Depth detection parameters</strong>
+        <input placeholder="target_detect_depth" id="target_depth" value = "0">
+          <!--<strong>Depth detection parameters</strong>-->
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="detail">
+  <div class="am-g am-container">
+    <div class="am-u-lg-12 am-margin">
+
+      <div class="am-g code-editor">
+        <!-- content start -->
+        <div class="admin-content">
+          <div class="admin-content-body">
+
+
+            <div class="am-tabs am-margin" data-am-tabs="{noSwipe: 1}">
+              <ul class="am-tabs-nav am-nav am-nav-tabs">
+                <li class="am-active"><a href="#tab_solidity">Solidity Code</a></li>
+                <li><a href="#tab_bytecode">Runtime Bytecode</a></li>
+              </ul>
+
+              <div class="am-tabs-bd">
+
+                <div class="am-tab-panel am-active" id="tab_solidity">
+                  <form class="am-form">
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top">
+                        <p><strong>Contract Name</strong></p>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12">
+                        <textarea rows="1" placeholder="Contract Name" id="solidity_name"></textarea>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top">
+                        <p><strong>Solidity Code</strong></p>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12">
+                        <pre id="editor"></pre>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top" align="center">
+                        <button type="button" class="am-btn am-btn-primary am-btn-xl am-round" onclick=analyze_solidity() id="start_button_1"><strong>Click HERE to Start Analyzing!</strong></button>
+                      </div>
+                  </form>
+                </div>
+
+                <div class="am-tab-panel am-fade" id="tab_bytecode">
+                  <form class="am-form">
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top">
+                        <p><strong>Runtime Bytecode</strong></p>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12">
+                        <textarea rows="15" placeholder="Bytecode" id="bytecode"></textarea>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top">
+                        <p><strong>Input Data</strong></p>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12">
+                        <textarea rows="5" placeholder="Input" id="bytecode_input"></textarea>
+                      </div>
+                      <div class="am-u-sm-12 am-u-md-12 am-margin-top" align="center">
+                        <button type="button" class="am-btn am-btn-primary am-btn-xl am-round" onclick=analyze_bytecode() id="start_button_2"><strong>Click HERE to Start Analyzing!</strong></button>
+                      </div>
+                  </form>
+                </div>
+
+
+
+              </div>
+            </div>
+
+
+          </div>
+
+        </div>
+        <!-- content end -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="analyze_result" style="word-break: break-all; word-wrap:break-word;">
+</div>
+
+
+
+
+<footer class="footer">
+  <p>Powered by <a href="http://amazeui.org/" target="_blank">AmazeUI</a></p>
+</footer>
+<script src="src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/dreamweaver");
+    editor.session.setMode("ace/mode/solidity");
+    editor.setFontSize(13);
+    document.getElementById("solidity_name").value="generic_holder";
+    editor.setValue("pragma solidity ^0.4.15;\n\r\n\rcontract generic_holder {\n\r    address owner;\n\r    address target = 0xca35b7d915458ef540ade6068dfe2f44e8fa733c;\n\r    address buyer = 0xc435b7d915458ef540ade6068dfe2f44e8fa723e;\n\r    modifier onlyowner {\n\r        if (owner == msg.sender)\n\r            _;\n\r    }\n\r    \n\r    // constructor\n\r    function generic_holder() {\n\r        owner = msg.sender;\n\r    }\n\r\n\r    function changetarget(address sender) onlyowner{\n\r        target = sender;\n\r    } \n\r    \n\r    function change_owner(address new_owner) {\n\r        owner = new_owner;\n\r    }\n\r    \n\r    function execute(uint _value, bytes _data) external onlyowner returns (bool){\n\r        return target.call.value(_value)(_data);\n\r    }\n\r\n\r    function send(address _to, uint _value) external onlyowner returns (bool){\n\r        return _to.send(_value); \n\r    }\n\r    \n\r    function get_owner() constant returns (address) {\n\r        return owner;\n\r    }\n\r    \n\r}");
+</script>
+<script src="assets/js/taint_samples.js"></script>
+<script src="assets/js/taint_analyze.js"></script>
+<script type="text/javascript">select_sample(document.getElementById("sample_select"));</script>
+<script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+<script src="http://cdn.staticfile.org/modernizr/2.8.3/modernizr.js"></script>
+<script src="assets/js/amazeui.ie8polyfill.min.js"></script>
+<![endif]-->
+
+<!--[if (gte IE 9)|!(IE)]><!-->
+<script src="assets/js/jquery.min.js"></script>
+<!--<![endif]-->
+<script src="assets/js/amazeui.min.js"></script>
+</body>
+</html>

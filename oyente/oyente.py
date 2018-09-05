@@ -13,8 +13,8 @@ import global_params
 from utils import run_command
 from input_helper import InputHelper
 
-from memory_profiler import memory_usage
-from time import sleep
+#from memory_profiler import memory_usage
+#from time import sleep
 def cmd_exists(cmd):
     return subprocess.call("type " + cmd, shell=True,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
@@ -36,7 +36,7 @@ def has_dependencies_installed():
         z3_version =  z3.get_version_string()
         tested_z3_version = '4.5.1'
         if compare_versions(z3_version, tested_z3_version) > 0:
-            logging.warning("You are using an untested version of z3. %s is the officially tested version" % tested_z3_version)
+            logging.debug("You are using an untested version of z3. %s is the officially tested version" % tested_z3_version)
     except:
         logging.critical("Z3 is not available. Please install z3 from https://github.com/Z3Prover/z3.")
         return False
@@ -50,7 +50,7 @@ def has_dependencies_installed():
         evm_version = re.findall(r"evm version (\d*.\d*.\d*)", out)[0]
         tested_evm_version = '1.7.3'
         if compare_versions(evm_version, tested_evm_version) > 0:
-            logging.warning("You are using evm version %s. The supported version is %s" % (evm_version, tested_evm_version))
+            logging.debug("You are using evm version %s. The supported version is %s" % (evm_version, tested_evm_version))
 
     if not cmd_exists("solc"):
         logging.critical("solc is missing. Please install the solidity compiler and make sure solc is in the path.")
@@ -61,7 +61,7 @@ def has_dependencies_installed():
         solc_version = re.findall(r"Version: (\d*.\d*.\d*)", out)[0]
         tested_solc_version = '0.4.19'
         if compare_versions(solc_version, tested_solc_version) > 0:
-            logging.warning("You are using solc version %s, The latest supported version is %s" % (solc_version, tested_solc_version))
+            logging.debug("You are using solc version %s, The latest supported version is %s" % (solc_version, tested_solc_version))
 
     return True
 
@@ -83,15 +83,15 @@ def run_solidity_analysis(inputs):
     results = {}
     exit_code = 0
     num = 0 
-    for inp in inputs:
+    #for inp in inputs:
 
-        logging.info("contract %s:", inp['contract'])
-        with open(inp['disasm_file'], 'r') as f:
-            lines = f.readlines()
-            last_line = lines[-1]
-            num = num +  int(last_line.split(":")[0])
-    logging.info("the total number:")
-    logging.info(num)
+        #logging.info("contract %s:", inp['contract'])
+       # with open(inp['disasm_file'], 'r') as f:
+        #    lines = f.readlines()
+        #    last_line = lines[-1]
+         #   num = num +  int(last_line.split(":")[0])
+    #logging.info("the total number:")
+    #logging.info(num)
 
     for inp in inputs:
         logging.info("contract %s:", inp['contract'])
