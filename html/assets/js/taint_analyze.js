@@ -61,7 +61,15 @@ function httpPost(type, name, code,target,owner) {
                 // 200 = OK
                 // alert(xmlhttp.responseText);
                 var result=xmlhttp.responseText;
-                var result_show='<p>Analysis Log:<br><br>'+result.replace(/[\n\r]/g,'<br>')+'</p>';
+                if (result.indexOf("Reentrancy")!=-1)
+                {
+                    var result_show="<p><p style = 'color:red;font-weight: 700'>Analysis Log: Reentrancy bug</p>"+result.replace(/[\n\r]/g,'<br>')+"</p>";
+                }
+                else 
+                {
+                    var result_show="<p><p style = 'font-weight: 700'>Analysis Log:</p>"+result.replace(/[\n\r]/g,'<br>')+"</p>";
+                }
+                
                 result_show+='</div>  </div></div>';
                 document.getElementById("analyze_result").innerHTML=result_show;
             }

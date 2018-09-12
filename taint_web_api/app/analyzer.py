@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import flask_restful as restful
 from flask_restful import reqparse
-import sys, json, requests, os, uuid
+import sys, json, requests, os, uuid,re
 
 
 sys.path.append("..")
@@ -53,11 +53,20 @@ class Analyzer(restful.Resource):
             with open(solidity_filepath, 'w') as f:
                 f.write(solidity_code)
             #my = os.popen("python %s -s %s >> %s 2>&1"%("~/Re-entrancy/oyente/oyente.py","~/Re-entrancy/25.sol","~/my.txt")).read()
-            my = os.popen("python ~/Re-entrancy/oyente/oyente.py -s %s -td %d -md %d -j -a -t 300000 > %s 2>&1 " %(solidity_filepath,target_depth,owner_depth,solidity_outpath)).read()
+            my = os.popen("time python ~/Re-entrancy/oyente/oyente.py -s %s -td %d -md %d -j -a -t 300000 > %s 2>&1 " %(solidity_filepath,target_depth,owner_depth,solidity_outpath)).read()
             ms = open(solidity_outpath)
             flag = False
             while 1:
                 linestr = ms.readline()
+                if linestr.find("inputs")!= -1:
+                    flag = False
+                if linestr.find("-ce")!= -1:
+                    flag = True
+                if linestr.find("sys")!= -1:
+                    flag = True
+
+                    linesplit = linestr.split("user")
+                    linestr = "Used time :" + linesplit[0] + "s"
                 if linestr.find('end_analysis_reentrancy')!= -1:
                     flag = False
                 if flag:
