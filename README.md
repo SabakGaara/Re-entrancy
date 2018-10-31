@@ -7,31 +7,6 @@ An Analysis Tool for Reentrancy Bug(Insecure message call)
 [![License: GPL v3][license-badge]][license-badge-url]
 [![Build Status](https://travis-ci.org/melonproject/oyente.svg?branch=master)](https://travis-ci.org/melonproject/oyente)
 
-## Quick Start
-
-A container with the dependencies set up can be found [here](https://hub.docker.com/r/luongnguyen/oyente/).
-
-To open the container, install docker and run:
-
-```
-docker pull luongnguyen/oyente && docker run -i -t luongnguyen/oyente
-```
-
-To evaluate the greeter contract inside the container, run:
-
-```
-cd /oyente/oyente && python oyente.py -s greeter.sol
-```
-
-and you are done!
-
-Note - If need the [version of Oyente](https://github.com/melonproject/oyente/tree/290f1ae1bbb295b8e61cbf0eed93dbde6f287e69) referred to in the paper, run the container from [here](https://hub.docker.com/r/hrishioa/oyente/)
-
-To run the web interface, execute
-`docker run -w /oyente/web -p 3000:3000 oyente:latest ./bin/rails server`
-
-
-
 ## Full installation
 
 ### Install the following dependencies
