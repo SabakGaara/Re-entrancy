@@ -1,7 +1,7 @@
-Oyente
+CallMe
 ======
 
-An Analysis Tool for Smart Contracts
+An Analysis Tool for Reentrancy Bug(Insecure message call) 
 
 [![Gitter][gitter-badge]][gitter-url]
 [![License: GPL v3][license-badge]][license-badge-url]
@@ -30,35 +30,7 @@ Note - If need the [version of Oyente](https://github.com/melonproject/oyente/tr
 To run the web interface, execute
 `docker run -w /oyente/web -p 3000:3000 oyente:latest ./bin/rails server`
 
-## Custom Docker image build
 
-```
-docker build -t oyente .
-docker run -it -p 3000:3000 -e "OYENTE=/oyente/oyente" oyente:latest
-```
-
-Open a web browser to `http://localhost:3000` for the graphical interface.
-
-## Installation
-
-Execute a python virtualenv
-
-```
-python -m virtualenv env
-source env/bin/activate
-```
-
-Install Oyente via pip:
-
-```
-$ pip2 install oyente
-```
-Dependencies:
-
-The following require a Linux system to fufill. macOS instructions forthcoming.
-
-[solc](https://github.com/melonproject/oyente#solc)
-[evm](https://github.com/melonproject/oyente#evm-from-go-ethereum)
 
 ## Full installation
 
@@ -110,51 +82,11 @@ pip install web3
 
 ```
 #evaluate a local solidity contract
-python oyente.py -s <contract filename>
-
-#evaluate a local solidity with option -a to verify assertions in the contract
-python oyente.py -a -s <contract filename>
-
-#evaluate a local evm contract
-python oyente.py -s <contract filename> -b
-
-#evaluate a remote contract
-python oyente.py -ru https://gist.githubusercontent.com/loiluu/d0eb34d473e421df12b38c12a7423a61/raw/2415b3fb782f5d286777e0bcebc57812ce3786da/puzzle.sol
+python oyente.py -s <contract filename> -td <assigment depth> -md <limitation depth>
 
 ```
+The following require a Linux system to fufill. macOS instructions forthcoming.
 
-And that's it! Run ```python oyente.py --help``` for a list of options.
-
-## Paper
-
-The accompanying paper explaining the bugs detected by the tool can be found [here](http://www.comp.nus.edu.sg/~loiluu/papers/oyente.pdf).
-
-## Miscellaneous Utilities
-
-A collection of the utilities that were developed for the paper are in `misc_utils`. Use them at your own risk - they have mostly been disposable.
-
-1. `generate-graphs.py` - Contains a number of functions to get statistics from contracts.
-2. `get_source.py` - The *get_contract_code* function can be used to retrieve contract source from [EtherScan](https://etherscan.io)
-3. `transaction_scrape.py` - Contains functions to retrieve up-to-date transaction information for a particular contract.
-
-## Benchmarks
-
-Note: This is an improved version of the tool used for the paper. Benchmarks are not for direct comparison.
-
-To run the benchmarks, it is best to use the docker container as it includes the blockchain snapshot necessary.
-In the container, run `batch_run.py` after activating the virtualenv. Results are in `results.json` once the benchmark completes.
-
-The benchmarks take a long time and a *lot* of RAM in any but the largest of clusters, beware.
-
-Some analytics regarding the number of contracts tested, number of contracts analysed etc. is collected when running this benchmark.
-
-## Contributing
-
-Checkout out our [contribution guide](https://github.com/melonproject/oyente/blob/master/CONTRIBUTING.md) and the code structure [here](https://github.com/melonproject/oyente/blob/master/code.md).
-
-
-[gitter-badge]: https://img.shields.io/gitter/room/melonproject/oyente.js.svg?style=flat-square
-[gitter-url]: https://gitter.im/melonproject/oyente?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-[license-badge]: https://img.shields.io/badge/License-GPL%20v3-blue.svg?style=flat-square
-[license-badge-url]: ./LICENSE
-# Re-entrancy
+[solc](https://github.com/melonproject/oyente#solc)
+[evm](https://github.com/melonproject/oyente#evm-from-go-ethereum)
+[oyente](https://github.com/melonproject/oyente/tree/master/oyente)
