@@ -7,12 +7,13 @@ function tset()
 {
     require(my == 3);
     msg.sender.send(3);
-    mytaint.call.value(1)();
+    mytaint.call.value(msg.value)();
 }
 
-function t2(address target){
-        require(my != 3);
-        mytaint = target;
-
+function t2(address taint){
+        require(msg.sender == owner);
+        mytaint = taint;
 }
+
+
 }

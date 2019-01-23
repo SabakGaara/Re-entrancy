@@ -1,6 +1,7 @@
 import tokenize
 import zlib, base64
 from tokenize import NUMBER, NAME, NEWLINE
+import copy
 import re
 import math
 import sys
@@ -577,7 +578,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     taint_memory = params.taint_memory
     var_state = params.var_state
 
-    log.info(block)
+    #log.info(block)
 
     Edge = namedtuple("Edge", ["v1", "v2"]) # Factory Function for tuples is used as dictionary key
     if block < 0:
@@ -619,9 +620,6 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         return ["ERROR"]
 
     for instr in block_ins:
-        log.info(instr)
-        if (instr == "CALL"):
-            log.info("aaaa")
         sym_exec_ins(params, block, instr, func_call, current_func_name)
 
     # Mark that this basic block in the visited blocks
@@ -2554,7 +2552,7 @@ def check_target(id, amount, path_conditions):
             for sitem in global_params.TARGET_TO_STARGET[id]:
                 if sitem in global_params.D_TAINT:
                     amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
-                    path_conditions.append(global_params.TARGET_PC_IDEX[sitem]["path"])
+                    path_conditions.append([global_params.TARGET_PC_IDEX[sitem]["path"]])
                 elif sitem in global_params.D_TARGET:
                     result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
                     if result == True:
@@ -2595,14 +2593,16 @@ def solver_path_condtions(path_conditions, amounts):
     solver.add(UGT(BitVec('Iv', 256), total_amount))
 
     if check_sat(solver) == sat:
-        check_solver = Solver()
-        check_solver.set("timeout", global_params.TIMEOUT)
-        for path in path_conditions:
-            for single in path:
-                if check_fun(single):
-                    check_solver.add(single)
+        path = []
+        ret = checksat(path_conditions, 0, path)
+        # check_solver = Solver()
+        # check_solver.set("timeout", global_params.TIMEOUT)
+        # for path in path_conditions:
+        #     for single in path:
+        #         if check_fun(single):
+        #             check_solver.add(single)
 
-        ret = not (check_solver.check() == unsat)
+        # ret = not (check_solver.check() == unsat)
         if ret:
             return True
         else:
@@ -2610,7 +2610,55 @@ def solver_path_condtions(path_conditions, amounts):
     else:
         return False
 
+# def checksat(path_conditions, depth_i, depth_j, path):
+#     if depth_i == len(path_conditions)-1:
+#         if depth_j <= len(path_conditions[depth_i])-1:
+#             temp_path = copy.deepcopy(path)
+#             temp_path.append(path_conditions[depth_i][depth_j])
+#             check_solver = Solver()
+#             check_solver.set("timeout", global_params.TIMEOUT)
+#             for single_path in temp_path:
+#                 for single in single_path:
+#                     if check_fun(single):
+#                         check_solver.add(single)
+#             result = not (check_solver.check() == unsat)
+#             if result:
+#                 return True
+#             else:
+#                 result = checksat(path_conditions, depth_i, depth_j+1, path)
+#                 return result
+#
+#         if depth_j == len(path_conditions[depth_i]):
+#             return False
+#     elif depth_i < len(path_conditions) - 1:
+#         if depth_j <= len(path_conditions[depth_i])-1:
+#             temp_path = copy.deepcopy(path)
+#             temp_path.append(path_conditions[depth_i][depth_j])
+#             result = checksat(path_conditions, depth_i+1, depth_j, temp_path)
+#             if not result:
+#                 result = checksat(path_conditions, depth_i, depth_j+1, path)
+#             return result
+#         else:
+#             return False
+#     else:
+#         return False
 
+def checksat(path_conditions, depth_i, path):
+    if depth_i == len(path_conditions):
+        check_solver = Solver()
+        check_solver.set("timeout", global_params.TIMEOUT)
+        for single_path in path:
+            for single in single_path:
+                if check_fun(single):
+                    check_solver.add(single)
+        return not (check_solver.check() == unsat)
+    for item in path_conditions[depth_i]:
+        temp_path = copy.deepcopy(path)
+        temp_path.append(item)
+        result = checksat(path_conditions, depth_i+1, temp_path)
+        if result:
+            return result
+    return False
 
 def check_fun(condition):
     if str(condition).find("Extract(255, 224") >= 0:
@@ -2623,7 +2671,7 @@ def detect_reentrancy():
     if len(global_params.TAINT) != 0 or len(global_params.D_TAINT) != 0:
         for item in global_params.D_TARGET:
             s_amount = [global_params.TARGET_PC_IDEX[item]["amount"]]
-            path = [global_params.TARGET_PC_IDEX[item]["path"]]
+            path = [[global_params.TARGET_PC_IDEX[item]["path"]]]
             if item in global_params.D_TAINT:
                 re1 = check_target(item, s_amount, path)
                 if re1 == True:
@@ -2642,17 +2690,16 @@ def detect_reentrancy():
             if item in global_params.TAINT and global_params.TARGET_DEPTH > 0:
                 for single in global_params.TARGET_PC[item]:
                     s_amount = [global_params.TARGET_PC_IDEX[single]["amount"]]
-                    path = [global_params.TARGET_PC_IDEX[single]["path"]]
+                    path = [[global_params.TARGET_PC_IDEX[single]["path"]]]
                     taint_paths = global_params.TAINT_PC[item].values()
-                    for s_path in taint_paths:
-                        path.append(s_path)
+                    path.append(taint_paths)
                     re3 = check_target(single, s_amount, path)
                     if re3:
                         log.info("taint in-direct happen")
             elif len(global_params.TREE[item]) != 0:
                 for single in global_params.TARGET_PC[item]:
                     s_amount = [global_params.TARGET_PC_IDEX[single]["amount"]]
-                    path = [global_params.TARGET_PC_IDEX[single]["path"]]
+                    path = [[global_params.TARGET_PC_IDEX[single]["path"]]]
                     result, path_conditions = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path)
                     if result > 0:
                         re4 = check_target(single, s_amount, path)
@@ -2757,25 +2804,25 @@ def dfs_target(item,target_time,owner_time,path):
         return 0, path
     for node in global_params.TREE[item]:
         
-        if (node in global_params.TAINT) and (node in global_params.MODIFIER[item]):
-            taint_paths = global_params.TAINT_PC[node]
+        if (node in global_params.TAINT) and (item in global_params.MODIFIER) and node in global_params.MODIFIER[item]:
+            taint_paths = global_params.TAINT_PC[node].values()
             if len(taint_paths) > 1:
                 temp_path = []
                 for single in taint_paths.keys():
-                    temp_path.append(taint_paths[single])
+                    temp_path.append([taint_paths[single]])
                 path.append(temp_path)
-            elif len(taint_paths == 1):
+            elif len(taint_paths) == 1:
                 path.append(taint_paths)
             return 2, path
         elif node in global_params.TAINT:
-            taint_paths = global_params.TAINT_PC[node]
+            taint_paths = global_params.TAINT_PC[node].values()
             if len(taint_paths) > 1:
                 temp_path = []
                 for single in taint_paths.keys():
                     temp_path.append(taint_paths[single])
                 path.append(temp_path)
-            elif len(taint_paths == 1):
-                path.append(taint_paths)
+            elif len(taint_paths) == 1:
+                path.append([taint_paths])
             return 1, path
         elif node in global_params.MODIFIER[item]:
             result, temp = dfs_modfier(node, owner_time, path)
@@ -2791,7 +2838,7 @@ def dfs_target(item,target_time,owner_time,path):
                     temp_path.append(single)
                 path.append(temp_path)
             elif len(taint_paths == 1):
-                path.append(taint_paths)
+                path.append([taint_paths])
 
             result, temp = dfs_target(node,target_time-1,owner_time, path)
             if result != 0:
@@ -2815,7 +2862,7 @@ def dfs_modfier(node, ownertime,path):
                     temp_path.append(taint_paths[single])
                 path.append(temp_path)
             elif len(taint_paths == 1):
-                path.append(taint_paths)
+                path.append([taint_paths])
             return True, path
         elif item in global_params.MODIFIER[node]:
             result, temp = dfs_modfier(item, ownertime-1,path)
