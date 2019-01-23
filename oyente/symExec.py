@@ -411,6 +411,7 @@ def add_falls_to():
     length = len(key_list)
     for i, key in enumerate(key_list):
         if jump_type[key] != "terminal" and jump_type[key] != "unconditional" and i+1 < length:
+
             target = key_list[i+1]
             edges[key].append(target)
             vertices[key].set_falls_to(target)
@@ -576,6 +577,8 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
     taint_memory = params.taint_memory
     var_state = params.var_state
 
+    log.info(block)
+
     Edge = namedtuple("Edge", ["v1", "v2"]) # Factory Function for tuples is used as dictionary key
     if block < 0:
         log.debug("UNKNOWN JUMP ADDRESS. TERMINATING THIS PATH")
@@ -616,6 +619,9 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         return ["ERROR"]
 
     for instr in block_ins:
+        log.info(instr)
+        if (instr == "CALL"):
+            log.info("aaaa")
         sym_exec_ins(params, block, instr, func_call, current_func_name)
 
     # Mark that this basic block in the visited blocks
@@ -636,7 +642,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         global no_of_test_cases
 
         total_no_of_paths += 1
-
+        global_params.TEMP_PC = []
         if global_params.GENERATE_TEST_CASES:
             try:
                 model = solver.model()
@@ -695,8 +701,8 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         except TimeoutError:
             raise
         except Exception as e:
-            if global_params.DEBUG_MODE:
-                traceback.print_exc()
+            log.info("debug")
+            traceback.print_exc()
 
         solver.pop()  # POP SOLVER CONTEXT
 
@@ -878,13 +884,13 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if not check_revert:
                     check_revert = any([True for instruction in vertices[falls_to].get_instructions() if instruction.startswith('REVERT')])
 
-            if jump_type[block] != 'conditional' or not check_revert:
-                if not isAllReal(first, second):
-                    solver.push()
-                    solver.add(UGT(second, first))
-                    #if check_sat(solver) == sat:
-                     #   global_problematic_pcs['integer_underflow'].append(Underflow(global_state['pc'] - 1, solver.model()))
-                    solver.pop()
+            # if jump_type[block] != 'conditional' or not check_revert:
+            #     if not isAllReal(first, second):
+            #         solver.push()
+            #         solver.add(UGT(second, first))
+            #         #if check_sat(solver) == sat:
+            #         #    global_problematic_pcs['integer_underflow'].append(Underflow(global_state['pc'] - 1, solver.model()))
+            #         solver.pop()
 
             stack.insert(0, computed)
             taint_stack.insert(0, taint_first|taint_second)
@@ -1217,11 +1223,11 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             global_state["pc"] = global_state["pc"] + 1
             first = stack.pop(0)
             second = stack.pop(0)
+            taint_first = taint_stack.pop(0)
+            taint_second = taint_stack.pop(0)
             if isAllReal(first, second):
                 first = to_signed(first)
                 second = to_signed(second)
-                taint_first = taint_stack.pop(0)
-                taint_second = taint_stack.pop(0)
                 if first < second:
                     computed = 1
                 else:
@@ -1443,7 +1449,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         # that is directly responsible for this execution
         global_state["pc"] = global_state["pc"] + 1
         stack.insert(0, global_state["sender_address"])
-        taint_stack.insert(0,TAINT_FLAG)
+        taint_stack.insert(0, TAINT_FLAG)
     elif opcode == "ORIGIN":  # get execution origination address
         global_state["pc"] = global_state["pc"] + 1
         stack.insert(0, global_state["origin"])
@@ -1582,11 +1588,11 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
         new_var_name = gen.gen_arbitrary_var()
         new_var = BitVec(new_var_name, 256)
         stack.insert(0, new_var)
-        taint_stack.insert(0,TAINT_FLAG)
+        taint_stack.insert(0, SAFE_FLAG)
     elif opcode == "GASPRICE":
         global_state["pc"] = global_state["pc"] + 1
         stack.insert(0, global_state["gas_price"])
-        taint_stack.insert(0,SAFE_FLAG)
+        taint_stack.insert(0, SAFE_FLAG)
 
     elif opcode == "EXTCODESIZE":
         if len(stack) > 0:
@@ -1622,7 +1628,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             taint_mem_location = taint_stack.pop(0)
             taint_code_from = taint_stack.pop(0)
             taint_no_bytes = taint_stack.pop(0)
-            if isAllReal(address, mem_location, current_miu_i, code_from, no_bytes) and USE_GLOBAL_BLOCKCHAIN:
+            if isAllReal(address, mem_location, current_miu_i, code_from, no_bytes):
                 if six.PY2:
                     temp = long(math.ceil((mem_location + no_bytes) / float(32)))
                 else:
@@ -1813,7 +1819,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 if temp > current_miu_i:
                     current_miu_i = temp
                 mem[stored_address] = stored_value  # note that the stored_value could be symbolic
-                taint_mem[stored_address] = taint_stored_value
+                taint_mem[stored_address] = taint_temp_value
             else:
                 temp = (stored_address / 32) + 1
                 if isReal(current_miu_i):
@@ -1829,7 +1835,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                 mem.clear()  # very conservative
                 taint_mem.clear()
                 mem[str(stored_address)] = stored_value
-                taint_mem[str(stored_address)] = taint_stored_value
+                taint_mem[str(stored_address)] = taint_temp_value
             global_state["miu_i"] = current_miu_i
         else:
             raise ValueError('STACK underflow')
@@ -1841,12 +1847,16 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             if isReal(position) and position in global_state["Ia"]:
                 value = global_state["Ia"][position]
                 stack.insert(0, value)
-                taint_stack.insert(0,taint_position)
+                # TODO add taint of storage
+                if position in global_params.TAINT:
+                    taint_stack.insert(0, TAINT_FLAG)
+                else:
+                    taint_stack.insert(0, taint_position)
             elif global_params.USE_GLOBAL_STORAGE and isReal(position) and position not in global_state["Ia"]:
                 value = data_source.getStorageAt(position)
                 global_state["Ia"][position] = value
                 stack.insert(0, value)
-                taint_stack.insert(0, taint_postion)
+                taint_stack.insert(0, taint_position)
             else:
                 if str(position) in global_state["Ia"]:
                     value = global_state["Ia"][str(position)]
@@ -1882,8 +1892,6 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             raise ValueError('STACK underflow')
 
     elif opcode == "SSTORE":
-        owner_path_condition = []
-        solver_owner = Solver()
         path_condition_sstore = path_conditions_and_vars["path_condition"]
         if len(stack) > 1:
             for call_pc in calls:
@@ -1906,118 +1914,83 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     ms_owner_num = str(ms_owner_key[1])
                 if not(ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
-
-            if isReal(stored_address):
                 # note that the stored_value could be unknown
-                try:
-                    stored_address = int(stored_address)
-                except:
-                    stored_address = str(stored_address)
+            try:
+                stored_address = int(stored_address)
+            except:
+                stored_address = str(stored_address)
 
-                global_state["Ia"][stored_address] = stored_value
-                if not(stored_address in global_params.TREE):
-                    global_params.TREE[stored_address] = []
+            global_state["Ia"][stored_address] = stored_value
+            if not(stored_address in global_params.TREE):
+                global_params.TREE[stored_address] = []
 
-                flag = False
-                for condition in path_condition_sstore:
-                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("Extract(159, 0, Is)") >= 0):
-                        flag = True
-                        pc_key = str(condition)
-                        break
-                if flag:
-                    ms_store = str(pc_key).find("Ia_store")
-                    if ms_store >= 0:
-                        ms_store_key = pc_key.split('-')
-                        try:
-                            ms_store_num = int(ms_store_key[1])
-                        except:
-                            ms_store_num = str(ms_store_key[1])
-                        if not (ms_store_num in global_params.TREE):
-                            global_params.TREE[ms_store_num] = []
-                        # if ms_store_num in global_params.TREE:
-                        #     if not (ms_store_num in global_params.MODIFIER):
-                        #         global_params.MODIFIER.append(ms_store_num)
-                        # else:
-                        #     global_params.TREE[ms_store_num] = []
-                        #     global_params.MODIFIER.append(ms_store_num)
-                if taint_stored_value == 1:
-                    # if stored_address in var_state :
-                    if not flag:
-                        if not (stored_address in global_params.TAINT):
-                            global_params.TAINT.append(stored_address)
-                    if flag and ms_store >= 0:
-                        global_params.TREE[stored_address].append(ms_store_num)
-                        if not (stored_address in global_params.MODIFIER):
-                            global_params.MODIFIER[stored_address] = []
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-                        else:
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
+            flag = False
+            for condition in path_condition_sstore:
+                if (str(condition).find('Is) ==') >= 0) or (str(condition).find("Extract(159, 0, Is)") >= 0):
+                    flag = True
+                    pc_key = str(condition)
+                    break
+            if flag:
+                ms_store = str(pc_key).find("Ia_store")
+                if ms_store >= 0:
+                    ms_store_key = pc_key.split('-')
+                    try:
+                        ms_store_num = int(ms_store_key[1])
+                    except:
+                        ms_store_num = str(ms_store_key[1])
+                    if not (ms_store_num in global_params.TREE):
+                        global_params.TREE[ms_store_num] = []
+                    # if ms_store_num in global_params.TREE:
+                    #     if not (ms_store_num in global_params.MODIFIER):
+                    #         global_params.MODIFIER.append(ms_store_num)
+                    # else:
+                    #     global_params.TREE[ms_store_num] = []
+                    #     global_params.MODIFIER.append(ms_store_num)
+            if taint_stored_value == 1:
+                # if stored_address in var_state :
+                if not stored_address in global_params.TAINT_PC:
+                    global_params.TAINT_PC[stored_address] = {global_state["pc"]: path_condition_sstore}
+                elif not (global_state["pc"] in global_params.TAINT_PC[stored_address]):
+                    global_params.TAINT_PC[stored_address][global_state["pc"]] = path_condition_sstore
 
-                elif key_value.find("Ia_store") >= 0:
-                    if flag and ms_store >= 0:
-                        global_params.TREE[stored_address].append(ms_store_num)
-                        if not (stored_address in global_params.MODIFIER):
-                            global_params.MODIFIER[stored_address] = []
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-                        else:
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
+                if not flag:
+                    if not (stored_address in global_params.TAINT):
+                        global_params.TAINT.append(stored_address)
+                if flag and ms_store >= 0:
+                    global_params.TREE[stored_address].append(ms_store_num)
 
+                    if not (stored_address in global_params.MODIFIER):
+                        global_params.MODIFIER[stored_address] = []
+                        global_params.MODIFIER[stored_address].append(ms_store_num)
+                    else:
+                        global_params.MODIFIER[stored_address].append(ms_store_num)
+
+            elif key_value.find("Ia_store") >= 0:
+                # if flag and ms_store >= 0:
+                #     global_params.TREE[stored_address].append(ms_store_num)
+
+                    # if not stored_address in global_params.SSTORE_PASS:
+                    #     global_params.SSTORE_PASS[stored_address] = []
+                    # elif not ms_store_num in global_params.SSTORE_PASS[stored_address]:
+                    #     global_params.SSTORE_PASS[stored_address][ms_store_num] = [global_params["pc"]]
+                    # else:
+                    #     global_params.SSTORE_PASS[stored_address][ms_store_num].append(global_params["pc"])
+                    #
+                    # if not (stored_address in global_params.MODIFIER):
+                    #     global_params.MODIFIER[stored_address] = []
+                    #     global_params.MODIFIER[stored_address].append(ms_store_num)
+                    # else:
+                    #     global_params.MODIFIER[stored_address].append(ms_store_num)
+                if not stored_address in global_params.SSTORE_PASS:
+                    global_params.SSTORE_PASS[stored_address] = []
+                elif not ms_owner_num in global_params.SSTORE_PASS[stored_address]:
+                    global_params.SSTORE_PASS[stored_address][ms_owner_num] = [path_condition_sstore]
+                else:
+                    global_params.SSTORE_PASS[stored_address][ms_owner_num].append(path_condition_sstore)
+
+                if ms_owner_num not in global_params.TREE[stored_address]:
                     global_params.TREE[stored_address].append(ms_owner_num)
-            else:
-                try:
-                    stored_address = int(stored_address)
-                except:
-                    stored_address = str(stored_address)
 
-                global_state["Ia"][stored_address] = stored_value
-                if not (stored_address in global_params.TREE):
-                    global_params.TREE[stored_address] = []
-
-                flag = False
-                for condition in path_condition_sstore:
-                    if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                        flag = True
-                        pc_key = str(condition)
-                        break
-                if flag:
-                    ms_store = pc_key.find("Ia_store")
-                    if ms_store >= 0:
-                        ms_store_key = pc_key.split('-')
-                        try:
-                            ms_store_num = int(ms_store_key[1])
-                        except:
-                            ms_store_num = str(ms_store_key[1])
-                        if not (ms_store_num in global_params.TREE):
-                            global_params.TREE[ms_store_num] = []
-                        # if ms_store_num in global_params.TREE:
-                        #     if not (ms_store_num in global_params.MODIFIER):
-                        #         global_params.MODIFIER.append(ms_store_num)
-                        # else:
-                        #     global_params.TREE[ms_store_num] = []
-                        #     global_params.MODIFIER.append(ms_store_num)
-                if taint_stored_value == 1:
-                    # if stored_address in var_state :
-                    if not flag:
-                        if not (stored_address in global_params.TAINT):
-                            global_params.TAINT.append(stored_address)
-                    if flag and ms_store >= 0:
-                        global_params.TREE[stored_address].append(ms_store_num)
-                        if not (stored_address in global_params.MODIFIER):
-                            global_params.MODIFIER[stored_address] = []
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-                        else:
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-
-                elif key_value.find("Ia_store") >= 0:
-                    if flag and ms_store >= 0:
-                        global_params.TREE[stored_address].append(ms_store_num)
-                        if not (stored_address in global_params.MODIFIER):
-                            global_params.MODIFIER[stored_address] = []
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-                        else:
-                            global_params.MODIFIER[stored_address].append(ms_store_num)
-
-                    global_params.TREE[stored_address].append(ms_owner_num)
         else:
             raise ValueError('STACK underflow')
     elif opcode == "JUMP":
@@ -2269,6 +2242,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
 
             if isReal(transfer_amount):
                 if transfer_amount == 0:
+                    taint_stack.insert(0, SAFE_FLAG)
                     stack.insert(0, 1)   # x = 0
                     return
 
@@ -2521,21 +2495,21 @@ def detect_callstack_attack():
         results['vulnerabilities']['callstack'] = callstack.is_vulnerable()
     log.info('\t  Callstack Depth Attack Vulnerability:  %s', callstack.is_vulnerable())
 
-def detect_reentrancy():
-    global g_src_map
-    global results
-    global reentrancy
-
-
-    pcs = global_problematic_pcs["reentrancy_bug"]
-
-    reentrancy = Reentrancy(g_src_map, pcs)
-
-    if g_src_map:
-        results['vulnerabilities']['reentrancy'] = reentrancy.get_warnings()
-    else:
-        results['vulnerabilities']['reentrancy'] = reentrancy.is_vulnerable()
-    log.info("\t  Re-Entrancy Vulnerability: \t\t %s", reentrancy.is_vulnerable())
+# def detect_reentrancy():
+#     global g_src_map
+#     global results
+#     global reentrancy
+#
+#
+#     pcs = global_problematic_pcs["reentrancy_bug"]
+#
+#     reentrancy = Reentrancy(g_src_map, pcs)
+#
+#     if g_src_map:
+#         results['vulnerabilities']['reentrancy'] = reentrancy.get_warnings()
+#     else:
+#         results['vulnerabilities']['reentrancy'] = reentrancy.is_vulnerable()
+#     log.info("\t  Re-Entrancy Vulnerability: \t\t %s", reentrancy.is_vulnerable())
 
 def detect_integer_underflow():
     global integer_underflow
@@ -2574,6 +2548,120 @@ def detect_assertion_failure():
     s = "\t  Assertion Failure: \t\t\t %s" % assertion_failure.is_vulnerable()
     log.info(s)
 
+def check_target(id, amount, path_conditions):
+    if id in global_params.TARGET_TO_STARGET:
+        if len(global_params.TARGET_TO_STARGET[id]) != 0:
+            for sitem in global_params.TARGET_TO_STARGET[id]:
+                if sitem in global_params.D_TAINT:
+                    amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+                    path_conditions.append(global_params.TARGET_PC_IDEX[sitem]["path"])
+                elif sitem in global_params.D_TARGET:
+                    result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
+                    if result == True:
+                        path_conditions = temp_path_conditions
+                    amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+                elif sitem in global_params.TARGET:
+                    result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
+                    if result == True:
+                        path_conditions = temp_path_conditions
+                    amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+    return solver_path_condtions(path_conditions, amount)
+
+
+
+def solver_path_condtions(path_conditions, amounts):
+
+    flag = True
+
+    for amount in amounts:
+        if flag:
+            total_amount = amount
+            flag = False
+        else:
+            total_amount = add(total_amount,amount)
+        # if isReal(amount):
+        #     if flag:
+        #         total_amount = BitVecVal(amount, 256)
+        #         flag = False
+        #     else:
+        #         total_amount = total_amount + BitVecVal(amount, 256)
+        # else:
+        #     if flag:
+        #         total_amount = amount
+        #         flag = False
+        #     else:
+        #         total_amount = total_amount + amount
+    solver.push()
+    solver.add(UGT(BitVec('Iv', 256), total_amount))
+
+    if check_sat(solver) == sat:
+        check_solver = Solver()
+        check_solver.set("timeout", global_params.TIMEOUT)
+        for path in path_conditions:
+            for single in path:
+                if check_fun(single):
+                    check_solver.add(single)
+
+        ret = not (check_solver.check() == unsat)
+        if ret:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+
+def check_fun(condition):
+    if str(condition).find("Extract(255, 224") >= 0:
+        return False
+    else:
+        return True
+
+
+def detect_reentrancy():
+    if len(global_params.TAINT) != 0 or len(global_params.D_TAINT) != 0:
+        for item in global_params.D_TARGET:
+            s_amount = [global_params.TARGET_PC_IDEX[item]["amount"]]
+            path = [global_params.TARGET_PC_IDEX[item]["path"]]
+            if item in global_params.D_TAINT:
+                re1 = check_target(item, s_amount, path)
+                if re1 == True:
+                    log.info("taint direct happen")
+
+            elif len(global_params.TREE[item]) != 0:
+                result, path_conditions = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path)
+                if result > 0:
+                    re2 = check_target(item, s_amount, path_conditions)
+                    if result == 2 and re2:
+                        log.info("onlyowner taint direct happen")
+
+
+        for item in global_params.TARGET:
+
+            if item in global_params.TAINT and global_params.TARGET_DEPTH > 0:
+                for single in global_params.TARGET_PC[item]:
+                    s_amount = [global_params.TARGET_PC_IDEX[single]["amount"]]
+                    path = [global_params.TARGET_PC_IDEX[single]["path"]]
+                    taint_paths = global_params.TAINT_PC[item].values()
+                    for s_path in taint_paths:
+                        path.append(s_path)
+                    re3 = check_target(single, s_amount, path)
+                    if re3:
+                        log.info("taint in-direct happen")
+            elif len(global_params.TREE[item]) != 0:
+                for single in global_params.TARGET_PC[item]:
+                    s_amount = [global_params.TARGET_PC_IDEX[single]["amount"]]
+                    path = [global_params.TARGET_PC_IDEX[single]["path"]]
+                    result, path_conditions = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path)
+                    if result > 0:
+                        re4 = check_target(single, s_amount, path)
+                        if re4 and result == 1:
+                            log.info("taint transfer in-direct happen")
+                        elif re4 and result == 2:
+                            log.info("onlyowner taint in-direct happen")
+
+
 def detect_vulnerabilities():
     global results
     global g_src_map
@@ -2582,61 +2670,61 @@ def detect_vulnerabilities():
     global begin
 
     if instructions:
-
-        log.info("begin_analysis_reentrancy")
-        if len(global_params.TAINT) != 0 or len(global_params.D_TAINT)!= 0:
-            for item in global_params.TARGET:
-                flag =False
-                if len(global_params.TREE[item]) != 0:
-                        
-                    results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
-                    if results == 2:
-                        flag = True
-                    elif results == 1:
-                        flag = True
-                if item in global_params.D_TAINT:
-                    log.info("taint direct happen")
-                    flag = True
-                if item in global_params.TAINT:
-                    log.info("taint in-direct happen")
-                    flag = True
-                if flag:
-                    for single in global_params.TARGET_PC[item]:
-                        
-                        if results == 2:
-                            if (item in global_params.D_MODIFIER) and  (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.D_MODIFIER[item]):
-                                log.info("taint target owner direct happen in")
-                            else:
-                                log.info("taint target owner happen in")
-                            log.info("onlyowner not work")
-                        elif results == 1:
-                            log.info("taint happen in")
-                            log.info("Target taint transfer")
-  
-                        #global_problematic_pcs["reentrancy_bug"].append(single)
-                        log.info("Reentrancy bug happen in line:" + str(g_src_map.get_location(single-1)['begin']['line']+1))
-                        
-                        code = g_src_map.get_source_code(single - 1)
-                        log.info(code)
-                    #if item in global_params.globals_state['Ia']:
-                     #   log.info(global_params.globals_state['Ia'][item])
-                    #else:
-                       #log.info(item)
-                else:
-                    for single in global_params.TARGET_PC[item]:
-                        log.info("Target is not taint in line :" + str(g_src_map.get_location(single-1)['begin']['line']+1))
-                        code = g_src_map.get_source_code(single - 1)
-                        log.info(code)
-
-        else:
-            log.info(global_params.TARGET)
-            for item in global_params.TARGET:
-               
-                for single in global_params.TARGET_PC[item]:
-                    log.info("Target is not taint in line :" + str(g_src_map.get_location(single-1)['begin']['line']+1))
-                    code = g_src_map.get_source_code(single - 1)
-                    log.info(code)
-        log.info("end_analysis_reentrancy")
+        detect_reentrancy()
+        # log.info("begin_analysis_reentrancy")
+        # if len(global_params.TAINT) != 0 or len(global_params.D_TAINT)!= 0:
+        #     for item in global_params.TARGET:
+        #         flag =False
+        #         if len(global_params.TREE[item]) != 0:
+        #
+        #             results = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH)
+        #             if results == 2:
+        #                 flag = True
+        #             elif results == 1:
+        #                 flag = True
+        #         if item in global_params.D_TAINT:
+        #             log.info("taint direct happen")
+        #             flag = True
+        #         if item in global_params.TAINT:
+        #             log.info("taint in-direct happen")
+        #             flag = True
+        #         if flag:
+        #             for single in global_params.TARGET_PC[item]:
+        #
+        #                 if results == 2:
+        #                     if (item in global_params.D_MODIFIER) and  (len(global_params.TREE[item]) == 1) and (global_params.TREE[item][0] in global_params.D_MODIFIER[item]):
+        #                         log.info("taint target owner direct happen in")
+        #                     else:
+        #                         log.info("taint target owner happen in")
+        #                     log.info("onlyowner not work")
+        #                 elif results == 1:
+        #                     log.info("taint happen in")
+        #                     log.info("Target taint transfer")
+        #
+        #                 #global_problematic_pcs["reentrancy_bug"].append(single)
+        #                 log.info("Reentrancy bug happen in line:" + str(g_src_map.get_location(single-1)['begin']['line']+1))
+        #
+        #                 code = g_src_map.get_source_code(single - 1)
+        #                 log.info(code)
+        #             #if item in global_params.globals_state['Ia']:
+        #              #   log.info(global_params.globals_state['Ia'][item])
+        #             #else:
+        #                #log.info(item)
+        #         else:
+        #             for single in global_params.TARGET_PC[item]:
+        #                 log.info("Target is not taint in line :" + str(g_src_map.get_location(single-1)['begin']['line']+1))
+        #                 code = g_src_map.get_source_code(single - 1)
+        #                 log.info(code)
+        #
+        # else:
+        #     log.info(global_params.TARGET)
+        #     for item in global_params.TARGET:
+        #
+        #         for single in global_params.TARGET_PC[item]:
+        #             log.info("Target is not taint in line :" + str(g_src_map.get_location(single-1)['begin']['line']+1))
+        #             code = g_src_map.get_source_code(single - 1)
+        #             log.info(code)
+        # log.info("end_analysis_reentrancy")
 
 
 
@@ -2651,44 +2739,103 @@ def detect_vulnerabilities():
         results["evm_code_coverage"] = "0/0"
 
     return results, 1
-def dfs_target(item,target_time,owner_time):
+def add(first,second):
+    if isReal(first) and isSymbolic(second):
+        first = BitVecVal(first, 256)
+        computed = first + second
+    elif isSymbolic(first) and isReal(second):
+        second = BitVecVal(second, 256)
+        computed = first + second
+    else:
+        # both are real and we need to manually modulus with 2 ** 256
+        # if both are symbolic z3 takes care of modulus automatically
+        computed = (first + second) % (2 ** 256)
+    computed = simplify(computed) if is_expr(computed) else computed
+    return computed
+def dfs_target(item,target_time,owner_time,path):
     if target_time == 0:
-        return 0
+        return 0, path
     for node in global_params.TREE[item]:
         
         if (node in global_params.TAINT) and (node in global_params.MODIFIER[item]):
-            return 2
+            taint_paths = global_params.TAINT_PC[node]
+            if len(taint_paths) > 1:
+                temp_path = []
+                for single in taint_paths.keys():
+                    temp_path.append(taint_paths[single])
+                path.append(temp_path)
+            elif len(taint_paths == 1):
+                path.append(taint_paths)
+            return 2, path
         elif node in global_params.TAINT:
-            return 1
+            taint_paths = global_params.TAINT_PC[node]
+            if len(taint_paths) > 1:
+                temp_path = []
+                for single in taint_paths.keys():
+                    temp_path.append(taint_paths[single])
+                path.append(temp_path)
+            elif len(taint_paths == 1):
+                path.append(taint_paths)
+            return 1, path
         elif node in global_params.MODIFIER[item]:
-            result = dfs_modfier(node, owner_time)
+            result, temp = dfs_modfier(node, owner_time, path)
             if result:
-                return 2
+                path = temp
+                return 2, path
         else:
-            result = dfs_target(node,target_time-1,owner_time)
+
+            taint_paths = global_params.SSTORE_PASS[item][node]
+            if len(taint_paths) > 1:
+                temp_path = []
+                for single in taint_paths:
+                    temp_path.append(single)
+                path.append(temp_path)
+            elif len(taint_paths == 1):
+                path.append(taint_paths)
+
+            result, temp = dfs_target(node,target_time-1,owner_time, path)
             if result != 0:
-                return result
-    return 0
+                path = temp
+                return result, path
+    return 0,path
 
 
 
-def dfs_modfier(node, ownertime):
+def dfs_modfier(node, ownertime,path):
     if ownertime == 0:
         # target_time = global_params.MODIFIER_DEPTH
-        return False
+        return False, path
     for item in global_params.TREE[node]:
 
         if item in global_params.TAINT:
-            return True
+            taint_paths = global_params.TAINT_PC[item]
+            if len(taint_paths) > 1:
+                temp_path = []
+                for single in taint_paths.keys():
+                    temp_path.append(taint_paths[single])
+                path.append(temp_path)
+            elif len(taint_paths == 1):
+                path.append(taint_paths)
+            return True, path
         elif item in global_params.MODIFIER[node]:
-            result = dfs_modfier(item, ownertime-1)
+            result, temp = dfs_modfier(item, ownertime-1,path)
             if result:
-                return True
+                path = temp
+                return True, path
         else:
-            result_target = dfs_target(item, ownertime-1,global_params.MODIFIER_DEPTH)
+            taint_paths = global_params.SSTORE_PASS[node][item]
+            if len(taint_paths) > 1:
+                temp_path = []
+                for single in taint_paths:
+                    temp_path.append(single)
+                path.append(temp_path)
+            elif len(taint_paths == 1):
+                path.append(taint_paths)
+            result_target,temp = dfs_target(item, global_params.TARGET_DEPTH-1,global_params.MODIFIER_DEPTH-1,path)
             if result_target:
-                return True
-    return False
+                path = temp
+                return True, path
+    return False,path
 
 def log_info_re(my_re):
     global g_src_map
@@ -2843,10 +2990,4 @@ def run(disasm_file=None, source_file=None, source_map=None):
 
         ret = detect_vulnerabilities()
         closing_message()
-        global_params.TARGET = []
-        global_params.MODIFIER = {}
-        global_params.TAINT = []
-        global_params.TREE ={}
-        global_params.global_state = {}
-        global_params.TARGET_PC = {}
         return ret

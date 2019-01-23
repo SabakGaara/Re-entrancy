@@ -18,7 +18,7 @@ TIMEOUT = 100
 UNIT_TEST = 0
 
 # timeout to run symbolic execution (in secs)
-GLOBAL_TIMEOUT = 50
+GLOBAL_TIMEOUT = 50000
 
 # timeout to run symbolic execution (in secs) for testing
 GLOBAL_TIMEOUT_TEST = 2
@@ -80,3 +80,23 @@ TREE = {}
 globals_state = {}
 
 TARGET_PC = {}
+
+TARGET_PC_IDEX = {}
+
+S_TAGET_PC = {}
+
+S_TAGET_PC_IDEX = {}
+
+SSTORE_PASS = {}
+
+SSTORE_PC_IDEX= {}
+
+TAINT_PC = {}
+
+TAINT_PC_IDEX = {}
+
+TARGET_TO_STARGET = {}
+
+TEMP_PC = []
+
+D_TARGET = []

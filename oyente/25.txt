@@ -1,40 +1,18 @@
-WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
-WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
-CRITICAL:root:Solidity compilation failed. Please use -ce flag to see the detail.
-WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
-WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
-CRITICAL:root:Solidity compilation failed. Please use -ce flag to see the detail.
-WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
-WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
-CRITICAL:root:Solidity compilation failed. Please use -ce flag to see the detail.
+contract mytest{
+address owner = msg.sender;
+address mytaint;
+uint my = 3;
 
-Command 'nohub' not found, did you mean:
+function tset()
+{
+    require(my == 3);
+    msg.sender.send(3);
+    mytaint.call.value(1)();
+}
 
-  command 'nohup' from deb coreutils
+function t2(address target){
+        require(my != 3);
+        mytaint = target;
 
-Try: apt install <deb name>
-
-nohup: ignoring input
-WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
-WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
-CRITICAL:root:Solidity compilation failed. Please use -ce flag to see the detail.
-nohup: ignoring input
-usage: oyente.py [-h] (-s SOURCE | -ru REMOTE_URL) [--version] [-rmp REMAP]
-                 [-t TIMEOUT] [-gl GAS_LIMIT] [-rp ROOT_PATH] [-ll LOOP_LIMIT]
-                 [-dl DEPTH_LIMIT] [-ap ALLOW_PATHS] [-glt GLOBAL_TIMEOUT]
-                 [-td TARGET_DEPTH] [-md MODIFIER_DEPTH] [-e] [-w] [-j] [-p]
-                 [-db] [-st] [-r] [-v] [-pl] [-b] [-a] [-sj] [-gb] [-ce]
-                 [-gtc] [-sjo]
-oyente.py: error: unrecognized arguments: -ce;
-nohup: ignoring input
-usage: oyente.py [-h] (-s SOURCE | -ru REMOTE_URL) [--version] [-rmp REMAP]
-                 [-t TIMEOUT] [-gl GAS_LIMIT] [-rp ROOT_PATH] [-ll LOOP_LIMIT]
-                 [-dl DEPTH_LIMIT] [-ap ALLOW_PATHS] [-glt GLOBAL_TIMEOUT]
-                 [-td TARGET_DEPTH] [-md MODIFIER_DEPTH] [-e] [-w] [-j] [-p]
-                 [-db] [-st] [-r] [-v] [-pl] [-b] [-a] [-sj] [-gb] [-ce]
-                 [-gtc] [-sjo]
-oyente.py: error: unrecognized arguments: ;
-nohup: ignoring input
-WARNING:root:You are using evm version 1.8.15. The supported version is 1.7.3
-WARNING:root:You are using solc version 0.4.24, The latest supported version is 0.4.19
-CRITICAL:root:Solidity compilation failed. Please use -ce flag to see the detail.
+}
+}

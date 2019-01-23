@@ -55,12 +55,6 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
 
     taint_recipient = taint_stack[1]
     taint_transfer_amount = taint_stack[2]
-    target_recipient = ""
-    target_transfer_amount= ""
-    if taint_recipient == 1:
-        target_recipient = "taint_target"
-    if taint_transfer_amount == 1:
-        target_transfer_amount = "taint transfer amount"
 
     if isSymbolic(transfer_amount) and is_storage_var(transfer_amount):
         pos = get_storage_position(transfer_amount)
@@ -70,28 +64,27 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         log.info("=>>>>>> New PC: " + str(new_path_condition))
 
     solver = Solver()
-    solver_owner = Solver()
-    solver_amount = Solver()
+    solver_send = Solver()
     solver.set("timeout", global_params.TIMEOUT)
+    solver_send.set("timeout", global_params.TIMEOUT)
+
     solver.add(path_condition)
+    solver_send.add(path_condition)
     solver.add(new_path_condition)
-    solver_owner.set("timeout", global_params.TIMEOUT)
-    solver_owner.add(path_condition)
-    solver_owner.add(new_path_condition)
-    solver_amount.set("timeout", global_params.TIMEOUT)
-    solver_amount.add(path_condition)
-    solver_amount.add(new_path_condition)
+    solver_send.add(new_path_condition)
     # 2300 is the outgas used by transfer and send.
     # If outgas > 2300 when using call.gas.value then the contract will be considered to contain reentrancy bug
     solver.add(stack[0] > 2300)
-    solver_amount.add(stack[0]>2300)
-    solver_owner.add(stack[0]>2300)
+
     # transfer_amount > deposit_amount => reentrancy
     # solver.add(stack[2] > BitVec('Iv', 256))
     # if it is not feasible to re-execute the call, its not a bug
+    save_val = False
     ret_val = not (solver.check() == unsat)
+    if not ret_val and str(stack[2])!= "0":
+        save_val = not(solver_send.check() == unsat)
     #log.info("Reentrancy_bug? " + str(ret_val))
-    if ret_val:
+    if ret_val or save_val:
         ms_condition = ""
         for condition in path_condition:
             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
@@ -107,18 +100,35 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     ms_owner_num = str(ms_owner_key[1])
                 if not (ms_owner_num in global_params.TREE):
                     global_params.TREE[ms_owner_num] = []
+        # Todo: path_condition
+        if ret_val:
+            if len(global_params.TEMP_PC) != 0:
+                if global_state["pc"] not in global_params.TARGET_TO_STARGET:
+                    global_params.TARGET_TO_STARGET[global_state["pc"]] = []
+                for pc in global_params.TEMP_PC:
+                    global_params.TARGET_TO_STARGET[global_state["pc"]].append(pc)
+
+        if save_val:
+            global_params.TEMP_PC.append(global_state["pc"])
 
         if taint_recipient:
-            target = str(stack[1])            
+            # target = str(stack[1])
+            target = global_state["pc"]
             if not(target in global_params.TREE):
                 global_params.TREE[target] = []
-            if not(target in global_params.TARGET):
-                global_params.TARGET.append(target)
-                global_params.TARGET_PC[target] = []
+            # Todo add target diffient
+            if ret_val and not(target in global_params.D_TARGET):
+                global_params.D_TARGET.append(target)
+            elif save_val and not global_state["pc"] in global_params.TARGET_PC_IDEX:
+                global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": "", "path": path_condition,"amount": transfer_amount}
  
-            if not(global_state["pc"] in global_params.TARGET_PC[target]):
-                global_params.TARGET_PC[target].append(global_state["pc"])
-            if ms_condition!= "":
+
+            #if not target in global_params.TARGET_PC and ret_val:
+                #global_params.TARGET_PC[target].append(global_state["pc"])
+
+            if not(global_state["pc"] in global_params.TARGET_PC_IDEX) and ret_val:
+                global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": "", "path": path_condition, "amount": transfer_amount}
+            if ms_condition != "":
                 global_params.TREE[target].append(ms_owner_num)
                 if not (target in global_params.MODIFIER):
                     global_params.MODIFIER[target] = []
@@ -128,36 +138,41 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 else:
                     global_params.MODIFIER[target].append(ms_owner_num)
                     global_params.D_MODIFIER[target].append(ms_owner_num)
-            elif ms_condition == "" :
+            elif ms_condition == "":
                 global_params.D_TAINT.append(target)
 
         else:
-            for single in stack:
-                res = str(single).find("Ia_store")
-                if res >= 0:
-                    result = str(single).split('-')
-                    try:
-                        res1 = int(result[1])
-                    except:
-                        res1 = str(result[1])
-                        # result.append(res1[1])
-                    if not (res1 in global_params.TREE):
-                        global_params.TREE[res1] = []
-
-                    if not (res1 in global_params.TARGET):
-                        global_params.TARGET.append(res1) 
-                        global_params.TARGET_PC[res1] = []
-                        global_params.TARGET_PC[res1].append(global_state["pc"])
-                    elif not(global_state["pc"] in global_params.TARGET_PC[res1]):
-                        global_params.TARGET_PC[res1].append(global_state["pc"])
-                    if ms_condition != "":
-                        if not (res1 in global_params.MODIFIER):
-                            global_params.MODIFIER[res1] = []
-                            global_params.MODIFIER[res1].append(ms_owner_num)
-                        else:
-                            global_params.MODIFIER[res1].append(ms_owner_num)
-        global_params.globals_state = global_state
-
+            single = stack[1]
+            res = str(single).find("Ia_store")
+            if res >= 0:
+                result = str(single).split('-')
+                try:
+                    res1 = int(result[1])
+                except:
+                    res1 = str(result[1])
+                    # result.append(res1[1])
+                if not (res1 in global_params.TREE):
+                    global_params.TREE[res1] = []
+                if save_val and not global_state["pc"] in global_params.TARGET_TO_STARGET:
+                    global_params.TEMP_PC.append(global_state["pc"])
+                    global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": res1, "path": path_condition, "amount": transfer_amount}
+                if not (res1 in global_params.TARGET) and ret_val:
+                    global_params.TARGET.append(res1)
+                    global_params.TARGET_PC[res1] = []
+                    global_params.TARGET_PC[res1].append(global_state["pc"])
+                    global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": res1, "path": path_condition,"amount": transfer_amount}
+                elif ret_val and not(global_state["pc"] in global_params.TARGET_PC[res1]):
+                    global_params.TARGET_PC[res1].append(global_state["pc"])
+                    global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": res1, "path": path_condition,"amount": transfer_amount}
+                elif save_val and not (global_state["pc"] in global_params.TARGET_PC_IDEX):
+                    global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": res1, "path": path_condition,"amount": transfer_amount}
+                if ms_condition != "":
+                    if not (res1 in global_params.MODIFIER):
+                        global_params.MODIFIER[res1] = []
+                        global_params.MODIFIER[res1].append(ms_owner_num)
+                    else:
+                        global_params.MODIFIER[res1].append(ms_owner_num)
+    global_params.globals_state = global_state
     return ret_val
 
 def calculate_gas(opcode, stack, mem, global_state, analysis, solver):
