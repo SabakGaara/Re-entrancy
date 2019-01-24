@@ -64,6 +64,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         log.info("=>>>>>> New PC: " + str(new_path_condition))
 
     solver = Solver()
+    # solver_send is used to mark "send" and "transfer"
     solver_send = Solver()
     solver.set("timeout", global_params.TIMEOUT)
     solver_send.set("timeout", global_params.TIMEOUT)
@@ -81,15 +82,21 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
     # if it is not feasible to re-execute the call, its not a bug
     save_val = False
     ret_val = not (solver.check() == unsat)
+    # if not require call and the transfer amount is not zero, check send and transfer
     if not ret_val and str(stack[2])!= "0":
         save_val = not(solver_send.check() == unsat)
     #log.info("Reentrancy_bug? " + str(ret_val))
+
     if ret_val or save_val:
         ms_condition = ""
+        # check msg.sender == owner
         for condition in path_condition:
+
             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                ms_condition = str(condition)
-                break
+                if str(condition).find('Not') == -1:
+                    ms_condition = str(condition)
+                    break
+        # if the modifier is exist
         if ms_condition != "":
             ms_owner = ms_condition.find("Ia_store")
             if ms_owner >= 0:
@@ -99,37 +106,43 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 except:
                     ms_owner_num = str(ms_owner_key[1])
                 if not (ms_owner_num in global_params.TREE):
+                    # Ia_store-1-owner/ Ia_store-same_var1-, add global_params.TREE[1], global_params.TREE["same_var1"]
                     global_params.TREE[ms_owner_num] = []
         # Todo: path_condition
+        # Add bind, global_params.TARGET_TO_STARGET[100] = [10,20], 10:send, 20:transfer
         if ret_val:
             if len(global_params.TEMP_PC) != 0:
-                if global_state["pc"] not in global_params.TARGET_TO_STARGET:
+                if not global_state["pc"] in global_params.TARGET_TO_STARGET:
                     global_params.TARGET_TO_STARGET[global_state["pc"]] = []
                 for pc in global_params.TEMP_PC:
                     global_params.TARGET_TO_STARGET[global_state["pc"]].append(pc)
-
+        # call/send add to TEMP_PC
         if save_val:
             global_params.TEMP_PC.append(global_state["pc"])
-
+        # if recipient is taint
         if taint_recipient:
             # target = str(stack[1])
+            # the target is marked by pc
             target = global_state["pc"]
             if not(target in global_params.TREE):
                 global_params.TREE[target] = []
             # Todo add target diffient
+            # call/ if target not in D_TARGET
             if ret_val and not(target in global_params.D_TARGET):
                 global_params.D_TARGET.append(target)
+            # if the save_val, and make it in TARGET_PC_INDEX[100] = {}
             elif save_val and not global_state["pc"] in global_params.TARGET_PC_IDEX:
                 global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": "", "path": path_condition,"amount": transfer_amount}
  
 
             #if not target in global_params.TARGET_PC and ret_val:
                 #global_params.TARGET_PC[target].append(global_state["pc"])
-
+            # same with rel_val
             if not(global_state["pc"] in global_params.TARGET_PC_IDEX) and ret_val:
                 global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": "", "path": path_condition, "amount": transfer_amount}
             if ms_condition != "" and ms_condition.find("Ia_store") >= 0:
                 global_params.TREE[target].append(ms_owner_num)
+                # add modifier to target, global_params.MODIFIER[]
                 if not (target in global_params.MODIFIER):
                     global_params.MODIFIER[target] = []
                     global_params.D_MODIFIER[target] = []
@@ -139,6 +152,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                     global_params.MODIFIER[target].append(ms_owner_num)
                     global_params.D_MODIFIER[target].append(ms_owner_num)
             elif ms_condition == "":
+                # D_TAINT contains send/transfer/call
                 global_params.D_TAINT.append(target)
 
         else:

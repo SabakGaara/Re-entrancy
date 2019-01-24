@@ -1895,7 +1895,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
-            # The solvtion of key
+            # The value of key
             key_value = str(stack[0])
             if key_value.find("Ia_store") >= 0:
                 ms_key = key_value
@@ -1919,9 +1919,10 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             flag = False
             for condition in path_condition_sstore:
                 if (str(condition).find('Is) ==') >= 0) or (str(condition).find("Extract(159, 0, Is)") >= 0):
-                    flag = True
-                    pc_key = str(condition)
-                    break
+                    if str(condition).find('Not') == -1:
+                        flag = True
+                        pc_key = str(condition)
+                        break
             if flag:
                 ms_store = str(pc_key).find("Ia_store")
                 if ms_store >= 0:
@@ -1975,7 +1976,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
                     #     global_params.MODIFIER[stored_address].append(ms_store_num)
                 if not stored_address in global_params.SSTORE_PASS:
                     global_params.SSTORE_PASS[stored_address] = {}
-                elif not ms_owner_num in global_params.SSTORE_PASS[stored_address]:
+                if not ms_owner_num in global_params.SSTORE_PASS[stored_address]:
                     global_params.SSTORE_PASS[stored_address][ms_owner_num] = [path_condition_sstore]
                 else:
                     global_params.SSTORE_PASS[stored_address][ms_owner_num].append(path_condition_sstore)
@@ -2547,16 +2548,22 @@ def check_target(id, amount, path_conditions):
                 if sitem in global_params.D_TAINT:
                     amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
                     path_conditions.append([global_params.TARGET_PC_IDEX[sitem]["path"]])
-                elif sitem in global_params.D_TARGET:
-                    result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
-                    if result == True:
-                        path_conditions = temp_path_conditions
-                    amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
-                elif sitem in global_params.TARGET:
-                    result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
-                    if result == True:
-                        path_conditions = temp_path_conditions
-                    amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+                else:
+                    tem_id = global_params.TARGET_PC_IDEX[sitem]["target"]
+                    if tem_id in global_params.TAINT:
+                        taint_paths = global_params.TAINT_PC[tem_id].values()
+                        path_conditions.append(taint_paths)
+                        amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+                    else:
+                        result, temp_path_conditions = dfs_target(tem_id, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
+                        if result > 0:
+                            path_conditions = temp_path_conditions
+                            amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
+                # elif sitem in global_params.TARGET:
+                #     result, temp_path_conditions = dfs_target(sitem, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path_conditions)
+                #     if result == True:
+                #         path_conditions = temp_path_conditions
+                #     amount.append(global_params.TARGET_PC_IDEX[sitem]["amount"])
     return solver_path_condtions(path_conditions, amount)
 
 
@@ -2564,13 +2571,12 @@ def check_target(id, amount, path_conditions):
 def solver_path_condtions(path_conditions, amounts):
 
     flag = True
-
     for amount in amounts:
         if flag:
             total_amount = amount
             flag = False
         else:
-            total_amount = add(total_amount,amount)
+            total_amount = add(total_amount, amount)
         # if isReal(amount):
         #     if flag:
         #         total_amount = BitVecVal(amount, 256)
@@ -2583,12 +2589,13 @@ def solver_path_condtions(path_conditions, amounts):
         #         flag = False
         #     else:
         #         total_amount = total_amount + amount
-    solver.push()
-    solver.add(ULT(BitVec('Iv', 256), total_amount))
+    if not flag:
+        solver.push()
+        solver.add(ULT(BitVec('Iv', 256), total_amount))
 
-    if check_sat(solver) == sat:
-        path = []
-        ret = checksat(path_conditions, 0, path)
+        if check_sat(solver) == sat:
+            path = []
+            ret = checksat(path_conditions, 0, path)
         # check_solver = Solver()
         # check_solver.set("timeout", global_params.TIMEOUT)
         # for path in path_conditions:
@@ -2597,10 +2604,10 @@ def solver_path_condtions(path_conditions, amounts):
         #             check_solver.add(single)
 
         # ret = not (check_solver.check() == unsat)
-        if ret:
-            return True
-        else:
-            return False
+            if ret:
+                return True
+            else:
+                return False
     else:
         return False
 
