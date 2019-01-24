@@ -128,7 +128,7 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
 
             if not(global_state["pc"] in global_params.TARGET_PC_IDEX) and ret_val:
                 global_params.TARGET_PC_IDEX[global_state["pc"]] = {"target": "", "path": path_condition, "amount": transfer_amount}
-            if ms_condition != "":
+            if ms_condition != "" and ms_condition.find("Ia_store") >= 0:
                 global_params.TREE[target].append(ms_owner_num)
                 if not (target in global_params.MODIFIER):
                     global_params.MODIFIER[target] = []
