@@ -620,6 +620,7 @@ def sym_exec_block(params, block, pre_block, depth, func_call, current_func_name
         return ["ERROR"]
 
     for instr in block_ins:
+        # print block_ins
         sym_exec_ins(params, block, instr, func_call, current_func_name)
 
     # Mark that this basic block in the visited blocks
@@ -1895,8 +1896,26 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             taint_stored_address = taint_stack.pop(0)
             stored_value = stack.pop(0)
             taint_stored_value = taint_stack.pop(0)
+            # the condition
+            flag = False
+            for condition in path_condition_sstore:
+                if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
+                    list_storage = get_vars(condition)
+                    for storage in list_storage:
+                        if is_storage_var(storage):
+                            solver_is = Solver()
+                            solver_is.set("timeout", global_params.TIMEOUT)
+                            pos = get_storage_position(storage)
+                            solver_is.add(path_condition_sstore)
+                            solver_is.add(global_state["sender_address"] == global_state["Ia"][pos])
+                            if not(check_sat(solver_is) == unsat):
+                                flag = True
+                                pc_key = str(condition)
+                                break
+
             # The value of key
             key_value = str(stack[0])
+
             if key_value.find("Ia_store") >= 0:
                 ms_key = key_value
                 ms_owner_key = key_value.split('-')
@@ -1916,13 +1935,7 @@ def sym_exec_ins(params, block, instr, func_call, current_func_name):
             if not(stored_address in global_params.TREE):
                 global_params.TREE[stored_address] = []
 
-            flag = False
-            for condition in path_condition_sstore:
-                if (str(condition).find('Is) ==') >= 0) or (str(condition).find("Extract(159, 0, Is)") >= 0):
-                    if str(condition).find('Not') == -1:
-                        flag = True
-                        pc_key = str(condition)
-                        break
+
             if flag:
                 ms_store = str(pc_key).find("Ia_store")
                 if ms_store >= 0:
@@ -2342,18 +2355,18 @@ def detect_time_dependency():
     TIMESTAMP_VAR = "IH_s"
     is_dependant = False
     pcs = []
-    if global_params.PRINT_PATHS:
-        log.info("ALL PATH CONDITIONS")
-    for i, cond in enumerate(path_conditions):
-        if global_params.PRINT_PATHS:
-            log.info("PATH " + str(i + 1) + ": " + str(cond))
-        for j, expr in enumerate(cond):
-            if is_expr(expr):
-                if TIMESTAMP_VAR in str(expr) and j in global_problematic_pcs["time_dependency_bug"][i]:
-                    pcs.append(global_problematic_pcs["time_dependency_bug"][i][j])
-                    is_dependant = True
-                    continue
-
+    # if global_params.PRINT_PATHS:
+    #     log.info("ALL PATH CONDITIONS")
+    # for i, cond in enumerate(path_conditions):
+    #     if global_params.PRINT_PATHS:
+    #         log.info("PATH " + str(i + 1) + ": " + str(cond))
+    #     for j, expr in enumerate(cond):
+    #         if is_expr(expr):
+    #             if TIMESTAMP_VAR in str(expr) and j in global_problematic_pcs["time_dependency_bug"][i]:
+    #                 pcs.append(global_problematic_pcs["time_dependency_bug"][i][j])
+    #                 is_dependant = True
+    #                 continue
+    #
     time_dependency = TimeDependency(g_src_map, pcs)
 
     if g_src_map:
@@ -2591,9 +2604,10 @@ def solver_path_condtions(path_conditions, amounts):
         #         total_amount = total_amount + amount
     if not flag:
         solver.push()
-        solver.add(ULT(BitVec('Iv', 256), total_amount))
+        solver.add(BitVec('Iv', 256) >= 0)
+        solver.add(total_amount > BitVec('Iv', 256))
 
-        if check_sat(solver) == sat:
+        if not (check_sat(solver) == unsat):
             path = []
             ret = checksat(path_conditions, 0, path)
         # check_solver = Solver()
@@ -2608,6 +2622,7 @@ def solver_path_condtions(path_conditions, amounts):
                 return True
             else:
                 return False
+        solver.pop()
     else:
         return False
 
@@ -2662,7 +2677,7 @@ def checksat(path_conditions, depth_i, path):
     return False
 
 def check_fun(condition):
-    if str(condition).find("Extract(255, 224") >= 0:
+    if str(condition).find("Extract(255, 224") >= 0 or str(condition).find("Extract(159, 0, Is)")>=0:
         return False
     else:
         return True
@@ -2675,6 +2690,10 @@ def detect_reentrancy():
             path = [[global_params.TARGET_PC_IDEX[item]["path"]]]
             if item in global_params.D_TAINT:
                 re1 = check_target(item, s_amount, path)
+                log.info("recipient direct taint")
+                log.info(g_src_map.get_location(item - 1)['begin']['line'])
+                code = g_src_map.get_source_code(item - 1)
+                log.info(code)
                 if re1 == True:
                     log.info("taint direct happen")
                     log.info("Reentrancy bug happen in line:")
@@ -2686,6 +2705,11 @@ def detect_reentrancy():
                 result, path_conditions = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path)
                 if result > 0:
                     re2 = check_target(item, s_amount, path_conditions)
+                    if result == 2:
+                        log.info("recipient direct onlyowner miss")
+                        log.info(g_src_map.get_location(item - 1)['begin']['line'])
+                        code = g_src_map.get_source_code(item - 1)
+                        log.info(code)
                     if result == 2 and re2:
                         log.info("onlyowner taint direct happen")
                         log.info("Reentrancy bug happen in line:")
@@ -2702,6 +2726,11 @@ def detect_reentrancy():
                     path = [[global_params.TARGET_PC_IDEX[single]["path"]]]
                     taint_paths = global_params.TAINT_PC[item].values()
                     path.append(taint_paths)
+                    log.info("recipient in-direct taint")
+                    log.info("Reentrancy bug happen in line:")
+                    log.info(g_src_map.get_location(single - 1)['begin']['line'])
+                    code = g_src_map.get_source_code(single - 1)
+                    log.info(code)
                     re3 = check_target(single, s_amount, path)
                     if re3:
                         log.info("taint in-direct happen")
@@ -2716,6 +2745,18 @@ def detect_reentrancy():
                     result, path_conditions = dfs_target(item, global_params.TARGET_DEPTH, global_params.MODIFIER_DEPTH, path)
                     if result > 0:
                         re4 = check_target(single, s_amount, path)
+                        if result == 1:
+                            log.info("recipient transfer in-direct")
+                            log.info("Reentrancy bug happen in line:")
+                            log.info(g_src_map.get_location(single - 1)['begin']['line'])
+                            code = g_src_map.get_source_code(single - 1)
+                            log.info(code)
+                        elif result == 2:
+                            log.info("recipient in-direct onlyowner miss")
+                            log.info("Reentrancy bug happen in line:")
+                            log.info(g_src_map.get_location(single - 1)['begin']['line'])
+                            code = g_src_map.get_source_code(single - 1)
+                            log.info(code)
                         if re4 and result == 1:
                             log.info("taint transfer in-direct happen")
                             log.info("Reentrancy bug happen in line:")
@@ -2772,6 +2813,39 @@ def detect_vulnerabilities():
         if g_src_map:
             log_info()
         detect_reentrancy()
+        global_params.TARGET_PC = {}
+
+        global_params.TARGET_PC_IDEX = {}
+
+        global_params.S_TAGET_PC = {}
+
+        global_params.S_TAGET_PC_IDEX = {}
+
+        global_params.SSTORE_PASS = {}
+
+        global_params.SSTORE_PC_IDEX = {}
+
+        global_params.TAINT_PC = {}
+
+        global_params.TAINT_PC_IDEX = {}
+
+        global_params.TARGET_TO_STARGET = {}
+
+        global_params.TEMP_PC = []
+
+        global_params.D_TARGET = []
+
+        global_params.TARGET = []
+
+        global_params.MODIFIER = {}
+
+        global_params.D_MODIFIER = {}
+
+        global_params.D_TAINT = []
+
+        global_params.TAINT = []
+        # The relation of Global params
+        global_params.TREE = {}
 
     else:
         log.info("\t  EVM code coverage: \t 0/0")
@@ -2822,8 +2896,8 @@ def dfs_target(item,target_time,owner_time,path):
             elif len(taint_paths) == 1:
                 path.append([taint_paths])
             return 1, path
-        elif node in global_params.MODIFIER[item]:
-            result, temp = dfs_modfier(node, owner_time, path)
+        elif item in global_params.MODIFIER and node in global_params.MODIFIER[item]:
+            result, temp = dfs_modfier(node, target_time, owner_time, path)
             if result:
                 path = temp
                 return 2, path
@@ -2835,7 +2909,7 @@ def dfs_target(item,target_time,owner_time,path):
                 for single in taint_paths:
                     temp_path.append(single)
                 path.append(temp_path)
-            elif len(taint_paths == 1):
+            elif len(taint_paths) == 1:
                 path.append([taint_paths])
 
             result, temp = dfs_target(node,target_time-1,owner_time, path)
@@ -2846,7 +2920,7 @@ def dfs_target(item,target_time,owner_time,path):
 
 
 
-def dfs_modfier(node, ownertime,path):
+def dfs_modfier(node, targettime, ownertime,path):
     if ownertime == 0:
         # target_time = global_params.MODIFIER_DEPTH
         return False, path
@@ -2859,11 +2933,11 @@ def dfs_modfier(node, ownertime,path):
                 for single in taint_paths.keys():
                     temp_path.append(taint_paths[single])
                 path.append(temp_path)
-            elif len(taint_paths == 1):
+            elif len(taint_paths) == 1:
                 path.append([taint_paths])
             return True, path
-        elif item in global_params.MODIFIER[node]:
-            result, temp = dfs_modfier(item, ownertime-1,path)
+        elif node in global_params.MODIFIER in global_params.MODIFIER[node]:
+            result, temp = dfs_modfier(item, targettime-1, ownertime-1,path)
             if result:
                 path = temp
                 return True, path
@@ -2874,9 +2948,9 @@ def dfs_modfier(node, ownertime,path):
                 for single in taint_paths:
                     temp_path.append(single)
                 path.append(temp_path)
-            elif len(taint_paths == 1):
+            elif len(taint_paths) == 1:
                 path.append(taint_paths)
-            result_target,temp = dfs_target(item, global_params.TARGET_DEPTH-1,global_params.MODIFIER_DEPTH-1,path)
+            result_target,temp = dfs_target(item, targettime-1,ownertime-1,path)
             if result_target:
                 path = temp
                 return True, path
@@ -2901,7 +2975,7 @@ def log_info():
     global assertion_failure
     global parity_multisig_bug_2
 
-    vulnerabilities = [integer_underflow, integer_overflow, callstack, money_concurrency, time_dependency]
+    vulnerabilities = [integer_underflow, integer_overflow, callstack, money_concurrency]
     if g_src_map:
         vulnerabilities.append(parity_multisig_bug_2)
         if global_params.CHECK_ASSERTIONS:

@@ -91,11 +91,19 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
         ms_condition = ""
         # check msg.sender == owner
         for condition in path_condition:
-
             if (str(condition).find('Is) ==') >= 0) or (str(condition).find("== Extract(159, 0, Is)") >= 0):
-                if str(condition).find('Not') == -1:
-                    ms_condition = str(condition)
-                    break
+                list_storage = get_vars(condition)
+                for storage in list_storage:
+                    if is_storage_var(storage):
+                        solver_is = Solver()
+                        solver_is.set("timeout", global_params.TIMEOUT)
+                        pos = get_storage_position(storage)
+                        solver_is.add(path_condition)
+                        solver_is.add(new_path_condition)
+                        solver_is.add(global_state["sender_address"] == global_state["Ia"][pos])
+                        if not(check_sat(solver_is)) == unsat:
+                            ms_condition = str(condition)
+                            break
         # if the modifier is exist
         if ms_condition != "":
             ms_owner = ms_condition.find("Ia_store")
@@ -115,12 +123,13 @@ def check_reentrancy_bug(path_conditions_and_vars, stack, global_state,taint_sta
                 if not global_state["pc"] in global_params.TARGET_TO_STARGET:
                     global_params.TARGET_TO_STARGET[global_state["pc"]] = []
                 for pc in global_params.TEMP_PC:
-                    global_params.TARGET_TO_STARGET[global_state["pc"]].append(pc)
+                    if not pc in global_params.TARGET_TO_STARGET[global_state["pc"]]:
+                        global_params.TARGET_TO_STARGET[global_state["pc"]].append(pc)
         # call/send add to TEMP_PC
         if save_val:
             global_params.TEMP_PC.append(global_state["pc"])
         # if recipient is taint
-        if taint_recipient:
+        if taint_recipient and str(stack[1]).find("Ia_store") == -1:
             # target = str(stack[1])
             # the target is marked by pc
             target = global_state["pc"]
